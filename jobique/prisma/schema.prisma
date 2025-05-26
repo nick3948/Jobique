@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int              @id @default(autoincrement())
+  email         String           @unique
+  password_hash String?
+  name          String
+  created_at    DateTime         @default(now())
+
+  jobApplications JobApplication[]
+  contacts        Contact[]
+  reminders       Reminder[]
+  goals           Goal[]
+}
+
+model JobApplication {
+  id         Int         @id @default(autoincrement())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     Int
+  title      String
+  company    String
+  location   String
+  link       String
+  status     String      // "Saved", "Applied", "InProgress", "Interviewing", "Offered", "Rejected"
+  applied_date DateTime?
+  notes      String?
+  created_at DateTime     @default(now())
+
+  documents     Document[]
+  jobContacts   JobContact[]
+  reminders     Reminder[]
+}
+
+model Document {
+  id         Int       @id @default(autoincrement())
+  job        JobApplication @relation(fields: [jobId], references: [id])
+  jobId      Int
+  type       String    // "resume", "cover_letter"
+  file_url   String
+  uploaded_at DateTime @default(now())
+}
+
+model Contact {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  name       String
+  email      String
+  phone      String?
+  company    String
+  position   String
+  linkedin   String?
+  tags       String?
+  notes      String?
+  created_at DateTime  @default(now())
+
+  jobContacts JobContact[]
+  reminders   Reminder[]
+}
+
+model JobContact {
+  id         Int         @id @default(autoincrement())
+  job        JobApplication @relation(fields: [jobId], references: [id])
+  jobId      Int
+  contact    Contact     @relation(fields: [contactId], references: [id])
+  contactId  Int
+  relationship_note String?
+}
+
+model Reminder {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  job        JobApplication? @relation(fields: [jobId], references: [id])
+  jobId      Int?
+  contact    Contact?   @relation(fields: [contactId], references: [id])
+  contactId  Int?
+  title      String
+  description String?
+  frequency  String    // "one_time", "daily", "weekly", "monthly"
+  next_due_date DateTime
+  status     String    // "pending", "done", "snoozed"
+  created_at DateTime  @default(now())
+}
+
+model Goal {
+  id                 Int             @id @default(autoincrement())
+  user               User            @relation(fields: [userId], references: [id])
+  userId             Int
+  type               String          // "daily", "weekly", "monthly"
+  target_applications Int
+  target_followups   Int
+  start_date         DateTime
+  end_date           DateTime
+  created_at         DateTime        @default(now())
+
+  progress           GoalProgress[]
+}
+
+model GoalProgress {
+  id                 Int             @id @default(autoincrement())
+  goal               Goal            @relation(fields: [goalId], references: [id])
+  goalId             Int
+  date               DateTime
+  applications_made  Int
+  followups_done     Int
+}
