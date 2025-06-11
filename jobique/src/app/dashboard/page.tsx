@@ -1,6 +1,5 @@
-import { currentUser } from '@clerk/nextjs/server'
+import { redirect } from "next/navigation";
 
-export default async function DashboardPage() {
-  const user = await currentUser()
-  return <div className="p-4 text-xl">Welcome, {user?.firstName} 👋</div>
+export default function DashboardPage() {
+  redirect("/dashboard/jobs");
 }

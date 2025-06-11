@@ -1,11 +1,19 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { SignedIn, SignedOut, SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  useUser,
+} from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 
 export default function Home() {
   const { user } = useUser();
+  const router = useRouter();
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -21,9 +29,13 @@ export default function Home() {
         <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-6 py-20 md:px-20 md:py-32 text-center">
           <h1 className="text-3xl font-bold mb-4">
             {user?.firstName ? (
-              <>Welcome, <span className="text-blue-500">{user.firstName}</span></>
+              <>
+                Welcome, <span className="text-blue-500">{user.firstName}</span>
+              </>
             ) : (
-              <>Welcome to <span className="text-blue-500">Jobique</span></>
+              <>
+                Welcome to <span className="text-blue-500">Jobique</span>
+              </>
             )}
           </h1>
           <SignedOut>
@@ -45,7 +57,10 @@ export default function Home() {
           </SignedOut>
           <SignedIn>
             <div className="flex flex-col items-center space-y-2">
-              <button className="w-full px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="w-full px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
+              >
                 Get Started
               </button>
             </div>
