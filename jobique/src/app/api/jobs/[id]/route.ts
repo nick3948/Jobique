@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const id = parseInt(params.id);
+  const parsedId = parseInt(id);
   const body = await req.json();
 
   try {
     const updated = await prisma.jobApplication.update({
-      where: { id, userId },
+      where: { id: parsedId, userId },
       data: {
         title: body.title,
         company: body.company,
@@ -34,16 +35,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const id = parseInt(params.id);
+  const parsedId = parseInt(id);
 
   try {
     await prisma.jobApplication.deleteMany({
       where: {
-        id,
+        id: parsedId,
         userId,
       },
     });
