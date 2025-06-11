@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -15,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id            Int              @id @default(autoincrement())
+  id            String              @id @default(cuid())
   email         String           @unique
   password_hash String?
   name          String
@@ -30,34 +29,28 @@ model User {
 model JobApplication {
   id         Int         @id @default(autoincrement())
   user       User        @relation(fields: [userId], references: [id])
-  userId     Int
+  userId     String
   title      String
   company    String
   location   String
+  pay          String?
+  h1bSponsor   Boolean
   link       String
   status     String      // "Saved", "Applied", "InProgress", "Interviewing", "Offered", "Rejected"
   applied_date DateTime?
   notes      String?
+  tags         String[]
+  resources    String[]
   created_at DateTime     @default(now())
 
-  documents     Document[]
   jobContacts   JobContact[]
   reminders     Reminder[]
-}
-
-model Document {
-  id         Int       @id @default(autoincrement())
-  job        JobApplication @relation(fields: [jobId], references: [id])
-  jobId      Int
-  type       String    // "resume", "cover_letter"
-  file_url   String
-  uploaded_at DateTime @default(now())
 }
 
 model Contact {
   id         Int       @id @default(autoincrement())
   user       User      @relation(fields: [userId], references: [id])
-  userId     Int
+  userId     String
   name       String
   email      String
   phone      String?
@@ -84,7 +77,7 @@ model JobContact {
 model Reminder {
   id         Int       @id @default(autoincrement())
   user       User      @relation(fields: [userId], references: [id])
-  userId     Int
+  userId     String
   job        JobApplication? @relation(fields: [jobId], references: [id])
   jobId      Int?
   contact    Contact?   @relation(fields: [contactId], references: [id])
@@ -100,7 +93,7 @@ model Reminder {
 model Goal {
   id                 Int             @id @default(autoincrement())
   user               User            @relation(fields: [userId], references: [id])
-  userId             Int
+  userId             String
   type               String          // "daily", "weekly", "monthly"
   target_applications Int
   target_followups   Int
