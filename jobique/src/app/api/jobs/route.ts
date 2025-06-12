@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs/server";
 import { createClerkClient } from "@clerk/nextjs/server";
 
 // POST /api/jobs — Add a new job
@@ -48,8 +47,6 @@ export async function POST(req: Request) {
         resources: body.resources || [],
       },
     });
-    console.log("Received body:", body);
-    console.log("Authenticated userId:", userId);
     return NextResponse.json(job, { status: 201 });
   } catch (err) {
     console.error("Error creating job:", err);

@@ -21,7 +21,6 @@ export default function JobsPage() {
   const [showModal, setShowModal] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
-
   const [form, setForm] = useState({
     title: "",
     company: "",
@@ -35,9 +34,17 @@ export default function JobsPage() {
     tags: "",
     resources: "",
   });
-
   const [editJobId, setEditJobId] = useState<number | null>(null);
-
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [jobIdInFocus, setJobIdInFocus] = useState<number | null>(null);
+  const [contacts, setContacts] = useState<any[]>([]); // replace with your actual Contact type later
+  const [showNewContactForm, setShowNewContactForm] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: "",
+    linkedin: "",
+    tags: "",
+    notes: "",
+  });
   const fetchJobs = async () => {
     const res = await fetch("/api/jobs");
     const data = await res.json();
@@ -46,7 +53,10 @@ export default function JobsPage() {
 
   useEffect(() => {
     fetchJobs();
-  }, []);
+    if (showContactModal) {
+      fetchContacts();
+    }
+  }, [showContactModal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +96,12 @@ export default function JobsPage() {
     }
     setEditJobId(null);
   };
-
+  const fetchContacts = async () => {
+    if (!jobIdInFocus) return;
+    const res = await fetch(`/api/contacts?jobId=${jobIdInFocus}`);
+    const data = await res.json();
+    setContacts(data);
+  };
   return (
     <div className="overflow-x-auto px-4 py-6">
       <div className="flex flex-col gap-4 mb-6">
@@ -312,50 +327,236 @@ export default function JobsPage() {
             <th className="border px-4 py-2">Applied Date</th>
             <th className="border px-4 py-2">Tags</th>
             <th className="border px-4 py-2">Resources</th>
+            <th className="border px-4 py-2">Contacts</th>
             <th className="border px-4 py-2">Notes</th>
           </tr>
         </thead>
         <tbody className="text-sm text-gray-800">
-          {jobs.map((job) => (
-            <tr key={job.id} className="hover:bg-gray-50">
-              <td className="border px-4 py-2">
-                <input
-                  type="checkbox"
-                  checked={selectedJobIds.includes(job.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedJobIds((prev) => [...prev, job.id]);
-                    } else {
-                      setSelectedJobIds((prev) =>
-                        prev.filter((id) => id !== job.id)
-                      );
-                    }
-                  }}
-                />
+          {jobs.length === 0 ? (
+            <tr>
+              <td colSpan={13} className="text-center py-4 text-gray-500">
+                No job applications found. Start by adding one!
               </td>
-              <td className="border px-4 py-2">{job.title}</td>
-              <td className="border px-4 py-2">{job.company}</td>
-              <td className="border px-4 py-2 text-blue-600 underline">
-                <a href={job.link} target="_blank" rel="noopener noreferrer">
-                  Link
-                </a>
-              </td>
-              <td className="border px-4 py-2">{job.status}</td>
-              <td className="border px-4 py-2">{job.location}</td>
-              <td className="border px-4 py-2">{job.pay}</td>
-              <td className="border px-4 py-2">
-                {job.h1bSponsor ? "Yes" : "No"}
-              </td>
-              <td className="border px-4 py-2">
-                {new Date(job.applied_date).toLocaleDateString()}
-              </td>
-              <td className="border px-4 py-2">{job.tags.join(", ")}</td>
-              <td className="border px-4 py-2">{job.resources.join(", ")}</td>
-              <td className="border px-4 py-2">{job.notes}</td>
             </tr>
-          ))}
+          ) : (
+            jobs.map((job) => (
+              <tr key={job.id} className="hover:bg-gray-50">
+                <td className="border px-4 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedJobIds.includes(job.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedJobIds((prev) => [...prev, job.id]);
+                      } else {
+                        setSelectedJobIds((prev) =>
+                          prev.filter((id) => id !== job.id)
+                        );
+                      }
+                    }}
+                  />
+                </td>
+                <td className="border px-4 py-2">{job.title}</td>
+                <td className="border px-4 py-2">{job.company}</td>
+                <td className="border px-4 py-2 text-blue-600 underline">
+                  <a href={job.link} target="_blank" rel="noopener noreferrer">
+                    Link
+                  </a>
+                </td>
+                <td className="border px-4 py-2">{job.status}</td>
+                <td className="border px-4 py-2">{job.location}</td>
+                <td className="border px-4 py-2">{job.pay}</td>
+                <td className="border px-4 py-2">
+                  {job.h1bSponsor ? "Yes" : "No"}
+                </td>
+                <td className="border px-4 py-2">
+                  {new Date(job.applied_date).toLocaleDateString()}
+                </td>
+                <td className="border px-4 py-2">{job.tags.join(", ")}</td>
+                <td className="border px-4 py-2">{job.resources.join(", ")}</td>
+                <td className="border px-4 py-2">
+                  <button
+                    className="text-sm text-blue-600 hover:underline"
+                    onClick={() => {
+                      setJobIdInFocus(job.id);
+                      setShowContactModal(true);
+                      // TODO: Load contacts via API
+                    }}
+                  >
+                    Contacts
+                  </button>
+                </td>
+                <td className="border px-4 py-2">{job.notes}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
+
+      {showContactModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Contacts for Job #{jobIdInFocus}
+              </h2>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="text-gray-600 hover:text-black"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mt-6 py-3">
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                onClick={() => setShowNewContactForm(true)}
+              >
+                + Add New Contact
+              </button>
+            </div>
+            <div className="space-y-4">
+              {contacts.length === 0 ? (
+                <p className="text-gray-500">No contacts added yet.</p>
+              ) : (
+                contacts.map((contact, idx) => (
+                  <div key={idx} className="border p-3 rounded shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{contact.name}</p>
+                        <a
+                          href={contact.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 text-sm"
+                        >
+                          LinkedIn
+                        </a>
+                        <div className="mt-1 text-sm text-gray-600">
+                          Tags:{" "}
+                          {contact.tags
+                            ?.split(",")
+                            .map((tag: string, i: number) => (
+                              <span
+                                key={i}
+                                className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-1"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                      <div className="space-x-2">
+                        <button className="text-yellow-600 text-sm">
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-600 text-sm cursor-pointer"
+                          onClick={async () => {
+                            const res = await fetch("/api/contacts", {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ id: contact.id }),
+                            });
+                            if (res.ok) {
+                              await fetchContacts();
+                            } else {
+                              alert("Failed to delete contact");
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {contact.notes && (
+                      <p className="mt-2 text-sm text-gray-700">
+                        Note: {contact.notes}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {showNewContactForm && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-60">
+                <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                  <h3 className="text-lg font-bold mb-4">Add New Contact</h3>
+                  <input
+                    className="w-full border p-2 rounded mb-3"
+                    placeholder="Name"
+                    value={newContact.name}
+                    onChange={(e) =>
+                      setNewContact({ ...newContact, name: e.target.value })
+                    }
+                  />
+                  <input
+                    className="w-full border p-2 rounded mb-3"
+                    placeholder="LinkedIn URL"
+                    value={newContact.linkedin}
+                    onChange={(e) =>
+                      setNewContact({ ...newContact, linkedin: e.target.value })
+                    }
+                  />
+                  <input
+                    className="w-full border p-2 rounded mb-3"
+                    placeholder="Tags (comma separated)"
+                    value={newContact.tags}
+                    onChange={(e) =>
+                      setNewContact({ ...newContact, tags: e.target.value })
+                    }
+                  />
+                  <textarea
+                    className="w-full border p-2 rounded mb-4"
+                    placeholder="Notes (optional)"
+                    value={newContact.notes}
+                    onChange={(e) =>
+                      setNewContact({ ...newContact, notes: e.target.value })
+                    }
+                  ></textarea>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setShowNewContactForm(false)}
+                      className="px-3 py-1 text-sm bg-gray-300 rounded"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const res = await fetch("/api/contacts", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            ...newContact,
+                            email: "",
+                            jobId: jobIdInFocus,
+                          }),
+                        });
+                        if (res.ok) {
+                          setNewContact({
+                            name: "",
+                            linkedin: "",
+                            tags: "",
+                            notes: "",
+                          });
+                          setShowNewContactForm(false);
+                          await fetchContacts();
+                        } else {
+                          alert("Failed to add contact");
+                        }
+                      }}
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded"
+                    >
+                      Save Contact
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

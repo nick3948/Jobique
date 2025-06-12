@@ -34,25 +34,3 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     return NextResponse.json({ error: "Error updating job" }, { status: 500 });
   }
 }
-
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const parsedId = parseInt(id);
-
-  try {
-    await prisma.jobApplication.deleteMany({
-      where: {
-        id: parsedId,
-        userId,
-      },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Error deleting job:", err);
-    return NextResponse.json({ error: "Error deleting job" }, { status: 500 });
-  }
-}

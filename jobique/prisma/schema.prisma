@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id            String              @id @default(cuid())
+  id            String           @id @default(cuid())
   email         String           @unique
   password_hash String?
   name          String
@@ -52,12 +52,10 @@ model Contact {
   user       User      @relation(fields: [userId], references: [id])
   userId     String
   name       String
-  email      String
-  phone      String?
-  company    String
-  position   String
-  linkedin   String?
-  tags       String?
+  email      String?
+  company    String?
+  linkedin   String
+  tags       String
   notes      String?
   created_at DateTime  @default(now())
 
