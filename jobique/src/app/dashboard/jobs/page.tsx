@@ -120,7 +120,7 @@ export default function JobsPage() {
   };
   const fetchContacts = async () => {
     if (!jobIdInFocus) return;
-    const res = await fetch(`/api/contacts?jobId=${jobIdInFocus}`);
+    const res = await fetch(`/api/contacts/job/${jobIdInFocus}`);
     const data = await res.json();
     setContacts(data);
   };
@@ -561,6 +561,8 @@ export default function JobsPage() {
                         setEditingContact(null);
                         setShowNewContactForm(false);
                         await fetchContacts();
+                      } else if (res.status === 400) {
+                        alert("This contact already exists for the selected job.");
                       } else {
                         alert("Failed to save contact");
                       }
