@@ -37,6 +37,7 @@ export default function JobsPage() {
   const [editJobId, setEditJobId] = useState<number | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [jobIdInFocus, setJobIdInFocus] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   interface Contact {
     id?: number;
     name: string;
@@ -56,6 +57,7 @@ export default function JobsPage() {
     notes: "",
   });
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
   const fetchJobs = async () => {
     const res = await fetch("/api/jobs");
@@ -72,8 +74,14 @@ export default function JobsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const payload = {
       ...form,
+      applied_date: form.applied_date
+        ? new Date(form.applied_date + "T00:00")
+        : null,
       tags: form.tags.split(",").map((t) => t.trim()),
       resources: form.resources.split(",").map((r) => r.trim()),
       ...(editJobId !== null && { id: editJobId }),
@@ -86,6 +94,8 @@ export default function JobsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
+    setIsSubmitting(false);
 
     if (res.ok) {
       setShowModal(false);
@@ -157,19 +167,23 @@ export default function JobsPage() {
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               <input
+                required
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Job Title"
                 className="border p-2 rounded"
               />
               <input
+                required
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
                 placeholder="Company"
                 className="border p-2 rounded"
               />
               <input
+                required
                 value={form.link}
+                type="url"
                 onChange={(e) => setForm({ ...form, link: e.target.value })}
                 placeholder="Job Link"
                 className="border p-2 rounded"
@@ -187,6 +201,7 @@ export default function JobsPage() {
                 className="border p-2 rounded"
               />
               <select
+                required
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
                 className="border p-2 rounded"
@@ -207,6 +222,7 @@ export default function JobsPage() {
                 className="border p-2 rounded"
               />
               <select
+                required
                 value={form.h1bSponsor ? "Yes" : "No"}
                 onChange={(e) =>
                   setForm({ ...form, h1bSponsor: e.target.value === "Yes" })
@@ -250,7 +266,8 @@ export default function JobsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  disabled={isSubmitting}
                 >
                   Save
                 </button>
@@ -296,7 +313,7 @@ export default function JobsPage() {
                 link: jobToEdit.link,
                 status: jobToEdit.status,
                 applied_date: jobToEdit.applied_date
-                  ? jobToEdit.applied_date.split("T")[0]
+                  ? new Date(jobToEdit.applied_date).toISOString().split("T")[0]
                   : "",
                 notes: jobToEdit.notes ?? "",
                 tags: jobToEdit.tags.join(", "),
@@ -382,7 +399,9 @@ export default function JobsPage() {
                   {job.h1bSponsor ? "Yes" : "No"}
                 </td>
                 <td className="border px-4 py-2">
-                  {new Date(job.applied_date).toLocaleDateString()}
+                  {job.applied_date
+                    ? new Date(job.applied_date).toLocaleDateString("en-CA")
+                    : "Not specified"}
                 </td>
                 <td className="border px-4 py-2">{job.tags.join(", ")}</td>
                 <td className="border px-4 py-2">{job.resources.join(", ")}</td>
@@ -409,7 +428,8 @@ export default function JobsPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                Contacts for {(() => {
+                Contacts for{" "}
+                {(() => {
                   const job = jobs.find((j) => j.id === jobIdInFocus);
                   return job ? `${job.title} @ ${job.company}` : "Selected Job";
                 })()}
@@ -462,7 +482,7 @@ export default function JobsPage() {
                       </div>
                       <div className="space-x-2">
                         <button
-                          className="text-yellow-600 text-sm"
+                          className="text-yellow-600 text-sm cursor-pointer"
                           onClick={() => {
                             setEditingContact(contact);
                             setNewContact({
@@ -508,85 +528,103 @@ export default function JobsPage() {
             {showNewContactForm && (
               <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-60">
                 <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                  <h3 className="text-lg font-bold mb-4">
-                    {editingContact ? "Edit Contact" : "Add New Contact"}
-                  </h3>
-                  <input
-                    className="w-full border p-2 rounded mb-3"
-                    placeholder="Name"
-                    value={newContact.name}
-                    onChange={(e) =>
-                      setNewContact({ ...newContact, name: e.target.value })
-                    }
-                  />
-                  <input
-                    className="w-full border p-2 rounded mb-3"
-                    placeholder="LinkedIn URL"
-                    value={newContact.linkedin}
-                    onChange={(e) =>
-                      setNewContact({ ...newContact, linkedin: e.target.value })
-                    }
-                  />
-                  <input
-                    className="w-full border p-2 rounded mb-3"
-                    placeholder="Tags (comma separated)"
-                    value={newContact.tags}
-                    onChange={(e) =>
-                      setNewContact({ ...newContact, tags: e.target.value })
-                    }
-                  />
-                  <textarea
-                    className="w-full border p-2 rounded mb-4"
-                    placeholder="Notes (optional)"
-                    value={newContact.notes}
-                    onChange={(e) =>
-                      setNewContact({ ...newContact, notes: e.target.value })
-                    }
-                  ></textarea>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => {
-                        setShowNewContactForm(false);
-                        setEditingContact(null);
-                      }}
-                      className="px-3 py-1 text-sm bg-gray-300 rounded"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        const method = editingContact ? "PUT" : "POST";
-                        const url = editingContact
-                          ? `/api/contacts/${editingContact.id}`
-                          : "/api/contacts";
-                        const res = await fetch(url, {
-                          method,
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            ...newContact,
-                            email: "",
-                            jobId: jobIdInFocus,
-                          }),
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (isSubmittingContact) return;
+                      setIsSubmittingContact(true);
+
+                      const method = editingContact ? "PUT" : "POST";
+                      const url = editingContact
+                        ? `/api/contacts/${editingContact.id}`
+                        : "/api/contacts";
+
+                      const res = await fetch(url, {
+                        method,
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          ...newContact,
+                          email: "",
+                          jobId: jobIdInFocus,
+                        }),
+                      });
+
+                      setIsSubmittingContact(false);
+
+                      if (res.ok) {
+                        setNewContact({
+                          name: "",
+                          linkedin: "",
+                          tags: "",
+                          notes: "",
                         });
-                        if (res.ok) {
-                          setNewContact({
-                            name: "",
-                            linkedin: "",
-                            tags: "",
-                            notes: "",
-                          });
-                          setEditingContact(null);
+                        setEditingContact(null);
+                        setShowNewContactForm(false);
+                        await fetchContacts();
+                      } else {
+                        alert("Failed to save contact");
+                      }
+                    }}
+                  >
+                    <h3 className="text-lg font-bold mb-4">
+                      {editingContact ? "Edit Contact" : "Add New Contact"}
+                    </h3>
+                    <input
+                      required
+                      type="text"
+                      className="w-full border p-2 rounded mb-3"
+                      placeholder="Name"
+                      value={newContact.name}
+                      onChange={(e) =>
+                        setNewContact({ ...newContact, name: e.target.value })
+                      }
+                    />
+                    <input
+                      required
+                      type="url"
+                      className="w-full border p-2 rounded mb-3"
+                      placeholder="LinkedIn URL"
+                      value={newContact.linkedin}
+                      onChange={(e) =>
+                        setNewContact({ ...newContact, linkedin: e.target.value })
+                      }
+                    />
+                    <input
+                      className="w-full border p-2 rounded mb-3"
+                      placeholder="Tags (comma separated)"
+                      value={newContact.tags}
+                      onChange={(e) =>
+                        setNewContact({ ...newContact, tags: e.target.value })
+                      }
+                    />
+                    <textarea
+                      className="w-full border p-2 rounded mb-4"
+                      placeholder="Notes (optional)"
+                      value={newContact.notes}
+                      onChange={(e) =>
+                        setNewContact({ ...newContact, notes: e.target.value })
+                      }
+                    ></textarea>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
                           setShowNewContactForm(false);
-                          await fetchContacts();
-                        } else {
-                          alert("Failed to save contact");
-                        }
-                      }}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded"
-                    >
-                      Save Contact
-                    </button>
-                  </div>
+                          setEditingContact(null);
+                        }}
+                        className="px-3 py-1 text-sm bg-gray-300 rounded"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingContact}
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded disabled:opacity-50"
+                      >
+                        Save Contact
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}

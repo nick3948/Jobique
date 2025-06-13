@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+// POST /api/jobs[id] — update a job
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const { userId } = await auth();
@@ -21,7 +22,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         h1bSponsor: body.h1bSponsor,
         link: body.link,
         status: body.status,
-        applied_date: body.applied_date ? new Date(body.applied_date) : undefined,
+        applied_date: body.applied_date ? new Date(body.applied_date) : null,
         notes: body.notes,
         tags: body.tags,
         resources: body.resources,
