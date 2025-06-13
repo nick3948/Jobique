@@ -4,19 +4,20 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
+    const { jobId } = await context.params;
   const { userId } = await auth();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const jobId = parseInt(params.jobId);
+  const jobIdNumber = parseInt(jobId);
 
   const jobContacts = await prisma.jobContact.findMany({
     where: {
-      jobId,
+      jobId: jobIdNumber,
       job: { userId },
     },
     include: {
@@ -25,6 +26,6 @@ export async function GET(
   });
 
   const contacts = jobContacts.map((jc) => jc.contact);
-  console.log("Contacts for job", jobId, contacts);
+  console.log("Contacts for job", jobIdNumber, contacts);
   return NextResponse.json(contacts);
 }
