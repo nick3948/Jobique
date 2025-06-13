@@ -37,7 +37,17 @@ export default function JobsPage() {
   const [editJobId, setEditJobId] = useState<number | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [jobIdInFocus, setJobIdInFocus] = useState<number | null>(null);
-  const [contacts, setContacts] = useState<any[]>([]); // replace with your actual Contact type later
+  interface Contact {
+    id?: number;
+    name: string;
+    linkedin: string;
+    tags: string;
+    notes?: string;
+    email?: string;
+    jobId?: number;
+  }
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [showNewContactForm, setShowNewContactForm] = useState(false);
   const [newContact, setNewContact] = useState({
     name: "",
@@ -45,6 +55,8 @@ export default function JobsPage() {
     tags: "",
     notes: "",
   });
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
   const fetchJobs = async () => {
     const res = await fetch("/api/jobs");
     const data = await res.json();
@@ -380,7 +392,6 @@ export default function JobsPage() {
                     onClick={() => {
                       setJobIdInFocus(job.id);
                       setShowContactModal(true);
-                      // TODO: Load contacts via API
                     }}
                   >
                     Contacts
@@ -398,7 +409,10 @@ export default function JobsPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                Contacts for Job #{jobIdInFocus}
+                Contacts for {(() => {
+                  const job = jobs.find((j) => j.id === jobIdInFocus);
+                  return job ? `${job.title} @ ${job.company}` : "Selected Job";
+                })()}
               </h2>
               <button
                 onClick={() => setShowContactModal(false)}
@@ -447,7 +461,19 @@ export default function JobsPage() {
                         </div>
                       </div>
                       <div className="space-x-2">
-                        <button className="text-yellow-600 text-sm">
+                        <button
+                          className="text-yellow-600 text-sm"
+                          onClick={() => {
+                            setEditingContact(contact);
+                            setNewContact({
+                              name: contact.name,
+                              linkedin: contact.linkedin,
+                              tags: contact.tags,
+                              notes: contact.notes || "",
+                            });
+                            setShowNewContactForm(true);
+                          }}
+                        >
                           Edit
                         </button>
                         <button
@@ -482,7 +508,9 @@ export default function JobsPage() {
             {showNewContactForm && (
               <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-60">
                 <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                  <h3 className="text-lg font-bold mb-4">Add New Contact</h3>
+                  <h3 className="text-lg font-bold mb-4">
+                    {editingContact ? "Edit Contact" : "Add New Contact"}
+                  </h3>
                   <input
                     className="w-full border p-2 rounded mb-3"
                     placeholder="Name"
@@ -517,15 +545,22 @@ export default function JobsPage() {
                   ></textarea>
                   <div className="flex justify-end gap-2">
                     <button
-                      onClick={() => setShowNewContactForm(false)}
+                      onClick={() => {
+                        setShowNewContactForm(false);
+                        setEditingContact(null);
+                      }}
                       className="px-3 py-1 text-sm bg-gray-300 rounded"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={async () => {
-                        const res = await fetch("/api/contacts", {
-                          method: "POST",
+                        const method = editingContact ? "PUT" : "POST";
+                        const url = editingContact
+                          ? `/api/contacts/${editingContact.id}`
+                          : "/api/contacts";
+                        const res = await fetch(url, {
+                          method,
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
                             ...newContact,
@@ -540,10 +575,11 @@ export default function JobsPage() {
                             tags: "",
                             notes: "",
                           });
+                          setEditingContact(null);
                           setShowNewContactForm(false);
                           await fetchContacts();
                         } else {
-                          alert("Failed to add contact");
+                          alert("Failed to save contact");
                         }
                       }}
                       className="px-3 py-1 text-sm bg-green-600 text-white rounded"
