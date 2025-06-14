@@ -1,0 +1,8 @@
+{
+  "cron": {
+    "job-reminders": {
+      "path": "/api/daily-reminder",
+      "schedule": "20 16 * * *"
+    }
+  }
+}

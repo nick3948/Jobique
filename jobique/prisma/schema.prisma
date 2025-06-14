@@ -19,7 +19,7 @@ model User {
   password_hash String?
   name          String
   created_at    DateTime         @default(now())
-
+  reminderDays  Int        @default(2)
   jobApplications JobApplication[]
   contacts        Contact[]
   reminders       Reminder[]
