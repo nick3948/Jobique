@@ -25,7 +25,7 @@ export default function DashboardLayout({
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-100 p-6 space-y-4 shadow-md">
+        <aside className="w-44 bg-gray-100 fixed top-18 left-0 h-screen p-6 space-y-4 shadow-md">
           <nav className="flex flex-col space-y-2">
             {navItems.map((item) => (
               <Link
@@ -44,7 +44,7 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 w-full">{children}</main>
+        <main className="flex-1 ml-38 p-8 overflow-y-auto w-full">{children}</main>
       </div>
     </div>
   );

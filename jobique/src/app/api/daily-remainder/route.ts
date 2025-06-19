@@ -20,7 +20,9 @@ export async function GET(req: Request) {
       if (job.status !== "Saved") return false;
       if (!job.created_at) return false;
       const jobDate = new Date(job.created_at);
-      const diff = Math.floor((today.getTime() - jobDate.getTime()) / (1000 * 60 * 60 * 24));
+      const diff = Math.floor(
+        (today.getTime() - jobDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
       return diff >= reminderDays;
     });
 
@@ -37,8 +39,14 @@ export async function GET(req: Request) {
         from: process.env.EMAIL_USER,
         to: user.email,
         subject: `Jobique Reminder: You have ${jobsToRemind.length} saved jobs!`,
-        text: `You have the following saved jobs for more than ${reminderDays} days:\n\n` +
-          jobsToRemind.map((j) => `- ${j.title} at ${j.company}`).join("\n"),
+        text:
+          `You have the following saved jobs for more than ${reminderDays} days:\n\n` +
+          jobsToRemind
+            .map(
+              (j) =>
+                `- ${j.title} at ${j.company} - <a href="${j.link}" target="_blank">Link</a>`
+            )
+            .join("\n"),
       });
     }
   }

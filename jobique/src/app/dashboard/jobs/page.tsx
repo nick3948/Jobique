@@ -1,5 +1,6 @@
 "use client";
 
+import ShareModal from "@/components/ui/ShareModal";
 import { useEffect, useState } from "react";
 
 interface Job {
@@ -65,6 +66,8 @@ export default function JobsPage() {
     setJobs(data);
   };
 
+  const [showShareModal, setShowShareModal] = useState(false);
+
   useEffect(() => {
     fetchJobs();
     if (showContactModal) {
@@ -125,7 +128,7 @@ export default function JobsPage() {
     setContacts(data);
   };
   return (
-    <div className="overflow-x-auto px-4 py-6">
+    <div className="mt-10 overflow-x-auto px-4 py-6">
       <div className="flex flex-col gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Job Tracker</h1>
@@ -157,7 +160,6 @@ export default function JobsPage() {
           </button>
         </div>
       </div>
-
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
@@ -276,10 +278,9 @@ export default function JobsPage() {
           </div>
         </div>
       )}
-
       <div className="flex gap-3 mb-3">
         <button
-          className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50"
+          className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50 cursor-pointer"
           disabled={selectedJobIds.length === 0}
           onClick={async () => {
             const res = await fetch("/api/jobs", {
@@ -299,7 +300,7 @@ export default function JobsPage() {
           Delete Selected
         </button>
         <button
-          className="px-4 py-2 bg-yellow-500 text-white rounded disabled:opacity-50"
+          className="px-4 py-2 bg-yellow-500 text-white rounded disabled:opacity-50 cursor-pointer"
           disabled={selectedJobIds.length !== 1}
           onClick={() => {
             const jobToEdit = jobs.find((j) => j.id === selectedJobIds[0]);
@@ -326,8 +327,14 @@ export default function JobsPage() {
         >
           Edit Selected
         </button>
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+          disabled={selectedJobIds.length === 0}
+          onClick={() => setShowShareModal(true)}
+        >
+          Share
+        </button>
       </div>
-
       <table className="min-w-full table-auto border border-gray-300 mt-4">
         <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
           <tr>
@@ -422,6 +429,12 @@ export default function JobsPage() {
           )}
         </tbody>
       </table>
+      {showShareModal && (
+        <ShareModal
+          jobIds={selectedJobIds}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
 
       {showContactModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
@@ -562,7 +575,9 @@ export default function JobsPage() {
                         setShowNewContactForm(false);
                         await fetchContacts();
                       } else if (res.status === 400) {
-                        alert("This contact already exists for the selected job.");
+                        alert(
+                          "This contact already exists for the selected job."
+                        );
                       } else {
                         alert("Failed to save contact");
                       }
@@ -588,7 +603,10 @@ export default function JobsPage() {
                       placeholder="LinkedIn URL"
                       value={newContact.linkedin}
                       onChange={(e) =>
-                        setNewContact({ ...newContact, linkedin: e.target.value })
+                        setNewContact({
+                          ...newContact,
+                          linkedin: e.target.value,
+                        })
                       }
                     />
                     <input

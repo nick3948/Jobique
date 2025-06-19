@@ -33,21 +33,29 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
-      <h1>Settings</h1>
-      <label htmlFor="reminderDays">Reminder Days</label>
-      <input
-        id="reminderDays"
-        type="number"
-        value={reminderDays}
-        onChange={(e) => setReminderDays(Number(e.target.value))}
-      />
+    <>
+      <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+      <div className="mb-4">
+        <label
+          htmlFor="reminderDays"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Reminder Days
+        </label>
+        <input
+          id="reminderDays"
+          type="number"
+          value={reminderDays}
+          onChange={(e) => setReminderDays(Number(e.target.value))}
+          className="border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-500"
+        />
+      </div>
       <button
         onClick={saveReminderPreference}
         className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
         Save
       </button>
-    </div>
+    </>
   );
 }
