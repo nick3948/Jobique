@@ -45,6 +45,7 @@ export async function POST(req: Request) {
         notes: body.notes || "",
         tags: body.tags || [],
         resources: body.resources || [],
+        shared: body.shared ?? false,
       },
     });
     return NextResponse.json(job, { status: 201 });
