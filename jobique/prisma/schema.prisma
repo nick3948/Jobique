@@ -41,6 +41,7 @@ model JobApplication {
   notes      String?
   tags         String[]
   resources    String[]
+  shared      Boolean  @default(false)
   created_at DateTime     @default(now())
 
   jobContacts   JobContact[]

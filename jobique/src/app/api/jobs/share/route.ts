@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
           notes: job.notes,
           tags: job.tags,
           resources: job.resources,
+          shared: true,
         },
       })
     )

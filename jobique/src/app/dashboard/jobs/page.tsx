@@ -16,7 +16,7 @@ interface Job {
   notes?: string;
   tags: string[];
   resources: string[];
-  shared?: boolean; // ← add this
+  shared?: boolean;
 }
 
 export default function JobsPage() {
