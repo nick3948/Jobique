@@ -16,6 +16,7 @@ interface Job {
   notes?: string;
   tags: string[];
   resources: string[];
+  shared?: boolean; // ← add this
 }
 
 export default function JobsPage() {
@@ -365,6 +366,7 @@ export default function JobsPage() {
             <th className="border px-4 py-2">Resources</th>
             <th className="border px-4 py-2">Contacts</th>
             <th className="border px-4 py-2">Notes</th>
+            <th className="border px-4 py-2">Type</th>
           </tr>
         </thead>
         <tbody className="text-sm text-gray-800">
@@ -424,6 +426,11 @@ export default function JobsPage() {
                   </button>
                 </td>
                 <td className="border px-4 py-2">{job.notes}</td>
+                <td className="border px-4 py-2">
+                  <span className={`text-xs px-2 py-1 rounded-full ${job.shared ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                    {job.shared ? 'Shared' : 'Created'}
+                  </span>
+                </td>
               </tr>
             ))
           )}
