@@ -19,12 +19,8 @@ export async function GET(req: Request) {
     const jobsToRemind = user.jobApplications.filter((job) => {
       if (job.status !== "Saved") return false;
       if (!job.created_at) return false;
-console.log("---job.status",job.status);
       const jobDate = new Date(job.created_at);
-      console.log("---jobDate",jobDate);
       const diff = Math.floor((today.getTime() - jobDate.getTime()) / (1000 * 60 * 60 * 24));
-      console.log("---diff",diff);
-      console.log("---reminderDays",reminderDays);
       return diff >= reminderDays;
     });
 
@@ -38,7 +34,7 @@ console.log("---job.status",job.status);
       });
 
       await transporter.sendMail({
-        from: process.env.GMAIL_USER,
+        from: process.env.EMAIL_USER,
         to: user.email,
         subject: `Jobique Reminder: You have ${jobsToRemind.length} saved jobs!`,
         text: `You have the following saved jobs for more than ${reminderDays} days:\n\n` +
