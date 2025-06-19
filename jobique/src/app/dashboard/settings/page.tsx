@@ -1,22 +1,32 @@
-"use client"
-
 import { useState } from "react";
 
-export default function Settings() {
-  const [reminderDays, setReminderDays] = useState(0);
+export default function SettingsPage() {
+  const [reminderDays, setReminderDays] = useState<number>(2);
+
+  const saveReminderPreference = async () => {
+    await fetch("/api/settings/reminders", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reminderDays }),
+    });
+  };
+
   return (
-    <div className="max-w-md bg-white shadow p-6 rounded">
-      <h2 className="text-xl font-semibold mb-4">Reminder Settings</h2>
-      <label className="block mb-2 font-medium">
-        Default reminder delay (days)
-      </label>
+    <div>
+      <h1>Settings</h1>
+      <label htmlFor="reminderDays">Reminder Days</label>
       <input
+        id="reminderDays"
         type="number"
-        min="1"
-        className="border rounded w-full p-2"
         value={reminderDays}
         onChange={(e) => setReminderDays(Number(e.target.value))}
       />
+      <button
+        onClick={saveReminderPreference}
+        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        Save
+      </button>
     </div>
   );
 }
