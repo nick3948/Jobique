@@ -35,7 +35,9 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
       }
     } catch (err) {
       console.error(err);
-      setError("An unexpected error occurred. Check the console for more details.");
+      setError(
+        "An unexpected error occurred. Check the console for more details."
+      );
     } finally {
       setLoading(false);
     }
@@ -57,20 +59,22 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
           <button
             onClick={handleShare}
             disabled={loading || !recipient}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Sharing..." : "Share"}
           </button>
           <button
             onClick={onClose}
             disabled={loading}
-            className="bg-gray-300 px-4 py-2 rounded"
+            className="bg-gray-300 px-4 py-2 rounded cursor-pointer"
           >
             Close
           </button>
         </div>
         {error && <p className="text-red-600 mt-2">{error}</p>}
-        {success && <p className="text-green-600 mt-2">Jobs shared successfully!</p>}
+        {success && (
+          <p className="text-green-600 mt-2">Jobs shared successfully!</p>
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 
 const navItems = [
   { href: "/dashboard/jobs", label: "Jobs" },
+  { href: "/dashboard/resources", label: "Resources" },
   { href: "/dashboard/goals", label: "Goals" },
   { href: "/dashboard/stats", label: "Stats" },
   { href: "/dashboard/settings", label: "Settings" },
@@ -44,7 +45,9 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 ml-38 p-8 overflow-y-auto w-full">{children}</main>
+        <main className="flex-1 ml-38 p-8 overflow-y-auto w-full">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -40,6 +40,12 @@ export default function JobsPage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [jobIdInFocus, setJobIdInFocus] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const JOBS_PER_PAGE = 15;
+  const [currentPage, setCurrentPage] = useState(1);
+  const indexOfLastJob = currentPage * JOBS_PER_PAGE;
+  const indexOfFirstJob = indexOfLastJob - JOBS_PER_PAGE;
+  const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
   interface Contact {
     id?: number;
     name: string;
@@ -75,6 +81,11 @@ export default function JobsPage() {
       fetchContacts();
     }
   }, [showContactModal]);
+
+  useEffect(() => {
+    const tableTop = document.getElementById("job-table")?.offsetTop;
+    if (tableTop) window.scrollTo({ top: tableTop - 100, behavior: "smooth" });
+  }, [currentPage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +140,7 @@ export default function JobsPage() {
     setContacts(data);
   };
   return (
-    <div className="mt-10 overflow-x-auto px-4 py-6">
+    <div className="mt-5 px-4 py-6 h-[calc(100vh-90px)] overflow-hidden flex flex-col">
       <div className="flex flex-col gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Job Tracker</h1>
@@ -336,106 +347,147 @@ export default function JobsPage() {
           Share
         </button>
       </div>
-      <table className="min-w-full table-auto border border-gray-300 mt-4">
-        <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
-          <tr>
-            <th className="border px-4 py-2">
-              <input
-                type="checkbox"
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedJobIds(jobs.map((j) => j.id));
-                  } else {
-                    setSelectedJobIds([]);
-                  }
-                }}
-                checked={
-                  selectedJobIds.length === jobs.length && jobs.length > 0
-                }
-              />
-            </th>
-            <th className="border px-4 py-2">Job Title</th>
-            <th className="border px-4 py-2">Company</th>
-            <th className="border px-4 py-2">Job Link</th>
-            <th className="border px-4 py-2">Status</th>
-            <th className="border px-4 py-2">Location</th>
-            <th className="border px-4 py-2">Pay</th>
-            <th className="border px-4 py-2">H1B?</th>
-            <th className="border px-4 py-2">Applied Date</th>
-            <th className="border px-4 py-2">Tags</th>
-            <th className="border px-4 py-2">Resources</th>
-            <th className="border px-4 py-2">Contacts</th>
-            <th className="border px-4 py-2">Notes</th>
-            <th className="border px-4 py-2">Type</th>
-          </tr>
-        </thead>
-        <tbody className="text-sm text-gray-800">
-          {jobs.length === 0 ? (
+      <div className="flex-1 overflow-y-auto border rounded-md max-h-[70vh]">
+        <table
+          id="job-table"
+          className="min-w-full table-auto border border-gray-300"
+        >
+          <thead className="bg-gray-100 text-sm font-semibold text-gray-700 sticky top-0 z-10">
             <tr>
-              <td colSpan={13} className="text-center py-4 text-gray-500">
-                No job applications found. Start by adding one!
-              </td>
+              <th className="border px-4 py-2">
+                <input
+                  type="checkbox"
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedJobIds(jobs.map((j) => j.id));
+                    } else {
+                      setSelectedJobIds([]);
+                    }
+                  }}
+                  checked={
+                    selectedJobIds.length === jobs.length && jobs.length > 0
+                  }
+                />
+              </th>
+              <th className="border px-4 py-2">Job Title</th>
+              <th className="border px-4 py-2">Company</th>
+              <th className="border px-4 py-2">Job Link</th>
+              <th className="border px-4 py-2">Status</th>
+              <th className="border px-4 py-2">Location</th>
+              <th className="border px-4 py-2">Pay</th>
+              <th className="border px-4 py-2">H1B?</th>
+              <th className="border px-4 py-2">Applied Date</th>
+              <th className="border px-4 py-2">Tags</th>
+              <th className="border px-4 py-2">Resources</th>
+              <th className="border px-4 py-2">Contacts</th>
+              <th className="border px-4 py-2">Notes</th>
+              <th className="border px-4 py-2">Type</th>
             </tr>
-          ) : (
-            jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-gray-50">
-                <td className="border px-4 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedJobIds.includes(job.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedJobIds((prev) => [...prev, job.id]);
-                      } else {
-                        setSelectedJobIds((prev) =>
-                          prev.filter((id) => id !== job.id)
-                        );
-                      }
-                    }}
-                  />
-                </td>
-                <td className="border px-4 py-2">{job.title}</td>
-                <td className="border px-4 py-2">{job.company}</td>
-                <td className="border px-4 py-2 text-blue-600 underline">
-                  <a href={job.link} target="_blank" rel="noopener noreferrer">
-                    Link
-                  </a>
-                </td>
-                <td className="border px-4 py-2">{job.status}</td>
-                <td className="border px-4 py-2">{job.location}</td>
-                <td className="border px-4 py-2">{job.pay}</td>
-                <td className="border px-4 py-2">
-                  {job.h1bSponsor ? "Yes" : "No"}
-                </td>
-                <td className="border px-4 py-2">
-                  {job.applied_date
-                    ? new Date(job.applied_date).toLocaleDateString("en-CA")
-                    : "Not specified"}
-                </td>
-                <td className="border px-4 py-2">{job.tags.join(", ")}</td>
-                <td className="border px-4 py-2">{job.resources.join(", ")}</td>
-                <td className="border px-4 py-2">
-                  <button
-                    className="text-sm text-blue-600 hover:underline"
-                    onClick={() => {
-                      setJobIdInFocus(job.id);
-                      setShowContactModal(true);
-                    }}
-                  >
-                    Contacts
-                  </button>
-                </td>
-                <td className="border px-4 py-2">{job.notes}</td>
-                <td className="border px-4 py-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${job.shared ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
-                    {job.shared ? 'Shared' : 'Created'}
-                  </span>
+          </thead>
+          <tbody className="text-sm text-gray-800">
+            {jobs.length === 0 ? (
+              <tr>
+                <td colSpan={13} className="text-center py-4 text-gray-500">
+                  No job applications found. Start by adding one!
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              currentJobs.map((job) => (
+                <tr key={job.id} className="hover:bg-gray-50">
+                  <td className="border px-4 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedJobIds.includes(job.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedJobIds((prev) => [...prev, job.id]);
+                        } else {
+                          setSelectedJobIds((prev) =>
+                            prev.filter((id) => id !== job.id)
+                          );
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className="border px-4 py-2">{job.title}</td>
+                  <td className="border px-4 py-2">{job.company}</td>
+                  <td className="border px-4 py-2 text-blue-600 underline">
+                    <a
+                      href={job.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Link
+                    </a>
+                  </td>
+                  <td className="border px-4 py-2">{job.status}</td>
+                  <td className="border px-4 py-2">{job.location}</td>
+                  <td className="border px-4 py-2">{job.pay}</td>
+                  <td className="border px-4 py-2">
+                    {job.h1bSponsor ? "Yes" : "No"}
+                  </td>
+                  <td className="border px-4 py-2">
+                    {job.applied_date
+                      ? new Date(job.applied_date).toLocaleDateString("en-CA")
+                      : "Not specified"}
+                  </td>
+                  <td className="border px-4 py-2">{job.tags.join(", ")}</td>
+                  <td className="border px-4 py-2">
+                    {job.resources.join(", ")}
+                  </td>
+                  <td className="border px-4 py-2">
+                    <button
+                      className="text-sm text-blue-600 hover:underline"
+                      onClick={() => {
+                        setJobIdInFocus(job.id);
+                        setShowContactModal(true);
+                      }}
+                    >
+                      Contacts
+                    </button>
+                  </td>
+                  <td className="border px-4 py-2">{job.notes}</td>
+                  <td className="border px-4 py-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        job.shared
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {job.shared ? "Shared" : "Created"}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center mt-4 space-x-2">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+        <span className="px-2">
+          Page {currentPage} of {Math.ceil(jobs.length / JOBS_PER_PAGE)}
+        </span>
+        <button
+          onClick={() =>
+            setCurrentPage((prev) =>
+              prev < Math.ceil(jobs.length / JOBS_PER_PAGE) ? prev + 1 : prev
+            )
+          }
+          disabled={currentPage === Math.ceil(jobs.length / JOBS_PER_PAGE)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
       {showShareModal && (
         <ShareModal
           jobIds={selectedJobIds}

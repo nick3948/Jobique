@@ -24,6 +24,8 @@ model User {
   contacts        Contact[]
   reminders       Reminder[]
   goals           Goal[]
+
+  resources Resource[]
 }
 
 model JobApplication {
@@ -87,6 +89,16 @@ model Reminder {
   next_due_date DateTime
   status     String    // "pending", "done", "snoozed"
   created_at DateTime  @default(now())
+}
+
+model Resource {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  label     String
+  url       String
+  note      String?
+  createdAt DateTime @default(now())
 }
 
 model Goal {
