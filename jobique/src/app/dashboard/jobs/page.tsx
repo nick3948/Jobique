@@ -295,17 +295,23 @@ export default function JobsPage() {
           className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50 cursor-pointer"
           disabled={selectedJobIds.length === 0}
           onClick={async () => {
-            const res = await fetch("/api/jobs", {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ids: selectedJobIds }),
-            });
+            try {
+              const res = await fetch("/api/jobs", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: selectedJobIds }),
+              });
 
-            if (res.ok) {
-              setSelectedJobIds([]);
-              fetchJobs();
-            } else {
-              alert("Failed to delete selected jobs");
+              if (res.ok) {
+                setSelectedJobIds([]);
+                fetchJobs();
+              } else {
+                const errorText = await res.text();
+                alert("Failed to delete selected jobs: " + errorText);
+              }
+            } catch (err) {
+              console.error("Fetch DELETE error:", err);
+              alert("Something went wrong.");
             }
           }}
         >

@@ -68,9 +68,9 @@ model Contact {
 
 model JobContact {
   id         Int         @id @default(autoincrement())
-  job        JobApplication @relation(fields: [jobId], references: [id])
+  job        JobApplication @relation(fields: [jobId], references: [id], onDelete: Cascade)
   jobId      Int
-  contact    Contact     @relation(fields: [contactId], references: [id])
+  contact    Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
   contactId  Int
   relationship_note String?
 }
@@ -79,7 +79,7 @@ model Reminder {
   id         Int       @id @default(autoincrement())
   user       User      @relation(fields: [userId], references: [id])
   userId     String
-  job        JobApplication? @relation(fields: [jobId], references: [id])
+  job        JobApplication? @relation(fields: [jobId], references: [id], onDelete: Cascade)
   jobId      Int?
   contact    Contact?   @relation(fields: [contactId], references: [id])
   contactId  Int?

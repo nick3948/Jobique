@@ -89,6 +89,7 @@ export async function DELETE(req: Request) {
   try {
     const body = await req.json();
     const ids: number[] = body.ids;
+    console.log("Received delete body:", body);
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json(
@@ -105,8 +106,8 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Error bulk deleting jobs:", err);
+  } catch (err: any) {
+    console.error("Error bulk deleting jobs:", err.message, err.stack);
     return NextResponse.json({ error: "Error deleting jobs" }, { status: 500 });
   }
 }
