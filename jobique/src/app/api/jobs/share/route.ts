@@ -87,6 +87,36 @@ export async function POST(req: NextRequest) {
     )
   );
 
+  // Send email notification to recipient
+  const nodemailer = require("nodemailer");
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const jobTitles = sharedJobs
+    .map((job) => `- ${job.title} at ${job.company}`)
+    .join("\n");
+
+  const mailOptions = {
+    from: `"Jobique" <${process.env.EMAIL_USER}>`,
+    to: matchedUser?.emailAddresses[0]?.emailAddress,
+    subject: "Job Applications Shared with You",
+    text: `Hi ${matchedUser?.firstName || ""},\n\n${
+      existing?.name || "A user"
+    } has shared the following job applications with you via Jobique:\n\n${jobTitles}\n\nYou can now view them in your Jobique dashboard.\n\n- Team Jobique`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.error("Failed to send share notification email", err);
+  }
+
   return NextResponse.json({
     message: "Jobs shared successfully",
     count: sharedJobs.length,

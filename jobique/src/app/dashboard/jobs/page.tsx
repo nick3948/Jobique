@@ -2,6 +2,8 @@
 
 import ShareModal from "@/components/ui/ShareModal";
 import { useEffect, useState } from "react";
+import { format, isToday, isYesterday } from "date-fns";
+import React from "react";
 
 interface Job {
   id: number;
@@ -30,7 +32,7 @@ export default function JobsPage() {
     pay: "",
     h1bSponsor: false,
     link: "",
-    status: "Applied",
+    status: "Saved",
     applied_date: "",
     notes: "",
     tags: "",
@@ -40,12 +42,49 @@ export default function JobsPage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [jobIdInFocus, setJobIdInFocus] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
 
   const JOBS_PER_PAGE = 15;
   const [currentPage, setCurrentPage] = useState(1);
   const indexOfLastJob = currentPage * JOBS_PER_PAGE;
   const indexOfFirstJob = indexOfLastJob - JOBS_PER_PAGE;
-  const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
+  const filteredJobs = jobs.filter(
+    (job) =>
+      (job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (statusFilter === "All Statuses" || job.status === statusFilter)
+  );
+  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
+
+  const groupedJobs = filteredJobs.reduce((groups, job) => {
+    const dateKey = job.applied_date
+      ? isYesterday(new Date(job.applied_date))
+        ? "Yesterday"
+        : isToday(new Date(job.applied_date))
+        ? "Today"
+        : format(new Date(job.applied_date), "MM/dd/yyyy")
+      : "Not Yet Applied!";
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(job);
+    return groups;
+  }, {} as Record<string, Job[]>);
+
+  const sortedGroupedJobs = Object.keys(groupedJobs)
+    .sort((a, b) => {
+      const parseDate = (key: string) => {
+        if (key === "Today") return new Date();
+        if (key === "Yesterday") return new Date(Date.now() - 86400000);
+        return new Date(key);
+      };
+      return parseDate(b).getTime() - parseDate(a).getTime();
+    })
+    .reduce((sorted, key) => {
+      sorted[key] = groupedJobs[key];
+      return sorted;
+    }, {} as Record<string, Job[]>);
+
+  const groupedJobsRes = sortedGroupedJobs;
   interface Contact {
     id?: number;
     name: string;
@@ -86,6 +125,23 @@ export default function JobsPage() {
     const tableTop = document.getElementById("job-table")?.offsetTop;
     if (tableTop) window.scrollTo({ top: tableTop - 100, behavior: "smooth" });
   }, [currentPage]);
+
+  useEffect(() => {
+    const handleClickOutsideCheckboxes = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isCheckbox = target.closest('input[type="checkbox"]');
+      const isLabel = target.closest("label");
+
+      if (!isCheckbox && !isLabel) {
+        setSelectedJobIds([]);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutsideCheckboxes);
+    return () => {
+      document.removeEventListener("click", handleClickOutsideCheckboxes);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,9 +211,16 @@ export default function JobsPage() {
               type="text"
               placeholder="Search by role or company..."
               className="w-full sm:w-64 px-4 py-2 border rounded-md"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <select className="px-4 py-2 border rounded-md text-sm text-gray-700">
+            <select
+              className="px-4 py-2 border rounded-md text-sm text-gray-700"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
               <option>All Statuses</option>
+              <option>Saved</option>
               <option>Applied</option>
               <option>Interviewing</option>
               <option>Rejected</option>
@@ -237,6 +300,7 @@ export default function JobsPage() {
               />
               <select
                 required
+                title="h1b sponsored?"
                 value={form.h1bSponsor ? "Yes" : "No"}
                 onChange={(e) =>
                   setForm({ ...form, h1bSponsor: e.target.value === "Yes" })
@@ -362,6 +426,7 @@ export default function JobsPage() {
             <tr>
               <th className="border px-4 py-2">
                 <input
+                  className="auto-uncheck"
                   type="checkbox"
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -391,80 +456,96 @@ export default function JobsPage() {
             </tr>
           </thead>
           <tbody className="text-sm text-gray-800">
-            {jobs.length === 0 ? (
+            {filteredJobs.length === 0 ? (
               <tr>
-                <td colSpan={13} className="text-center py-4 text-gray-500">
+                <td colSpan={14} className="text-center py-4 text-gray-500">
                   No job applications found. Start by adding one!
                 </td>
               </tr>
             ) : (
-              currentJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50">
-                  <td className="border px-4 py-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedJobIds.includes(job.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedJobIds((prev) => [...prev, job.id]);
-                        } else {
-                          setSelectedJobIds((prev) =>
-                            prev.filter((id) => id !== job.id)
-                          );
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="border px-4 py-2">{job.title}</td>
-                  <td className="border px-4 py-2">{job.company}</td>
-                  <td className="border px-4 py-2 text-blue-600 underline">
-                    <a
-                      href={job.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              Object.entries(groupedJobsRes).map(([dateLabel, jobsForDate]) => (
+                <React.Fragment key={dateLabel}>
+                  <tr>
+                    <td
+                      colSpan={14}
+                      className="bg-gray-200 font-semibold px-4 py-2"
                     >
-                      Link
-                    </a>
-                  </td>
-                  <td className="border px-4 py-2">{job.status}</td>
-                  <td className="border px-4 py-2">{job.location}</td>
-                  <td className="border px-4 py-2">{job.pay}</td>
-                  <td className="border px-4 py-2">
-                    {job.h1bSponsor ? "Yes" : "No"}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {job.applied_date
-                      ? new Date(job.applied_date).toLocaleDateString("en-CA")
-                      : "Not specified"}
-                  </td>
-                  <td className="border px-4 py-2">{job.tags.join(", ")}</td>
-                  <td className="border px-4 py-2">
-                    {job.resources.join(", ")}
-                  </td>
-                  <td className="border px-4 py-2">
-                    <button
-                      className="text-sm text-blue-600 hover:underline"
-                      onClick={() => {
-                        setJobIdInFocus(job.id);
-                        setShowContactModal(true);
-                      }}
-                    >
-                      Contacts
-                    </button>
-                  </td>
-                  <td className="border px-4 py-2">{job.notes}</td>
-                  <td className="border px-4 py-2">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        job.shared
-                          ? "bg-blue-100 text-blue-600"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {job.shared ? "Shared" : "Created"}
-                    </span>
-                  </td>
-                </tr>
+                      {dateLabel}
+                    </td>
+                  </tr>
+                  {jobsForDate.map((job) => (
+                    <tr key={job.id} className="hover:bg-gray-50">
+                      <td className="border px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobIds.includes(job.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedJobIds((prev) => [...prev, job.id]);
+                            } else {
+                              setSelectedJobIds((prev) =>
+                                prev.filter((id) => id !== job.id)
+                              );
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="border px-4 py-2">{job.title}</td>
+                      <td className="border px-4 py-2">{job.company}</td>
+                      <td className="border px-4 py-2 text-blue-600 underline">
+                        <a
+                          href={job.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Link
+                        </a>
+                      </td>
+                      <td className="border px-4 py-2">{job.status}</td>
+                      <td className="border px-4 py-2">{job.location}</td>
+                      <td className="border px-4 py-2">{job.pay}</td>
+                      <td className="border px-4 py-2">
+                        {job.h1bSponsor ? "Yes" : "No"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {job.applied_date
+                          ? new Date(job.applied_date).toLocaleDateString(
+                              "en-CA"
+                            )
+                          : "Not specified"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {job.tags.join(", ")}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {job.resources.join(", ")}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <button
+                          className="text-sm text-blue-600 hover:underline"
+                          onClick={() => {
+                            setJobIdInFocus(job.id);
+                            setShowContactModal(true);
+                          }}
+                        >
+                          Contacts
+                        </button>
+                      </td>
+                      <td className="border px-4 py-2">{job.notes}</td>
+                      <td className="border px-4 py-2">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            job.shared
+                              ? "bg-blue-100 text-blue-600"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {job.shared ? "Shared" : "Created"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))
             )}
           </tbody>
@@ -480,15 +561,19 @@ export default function JobsPage() {
           Prev
         </button>
         <span className="px-2">
-          Page {currentPage} of {Math.ceil(jobs.length / JOBS_PER_PAGE)}
+          Page {currentPage} of {Math.ceil(filteredJobs.length / JOBS_PER_PAGE)}
         </span>
         <button
           onClick={() =>
             setCurrentPage((prev) =>
-              prev < Math.ceil(jobs.length / JOBS_PER_PAGE) ? prev + 1 : prev
+              prev < Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+                ? prev + 1
+                : prev
             )
           }
-          disabled={currentPage === Math.ceil(jobs.length / JOBS_PER_PAGE)}
+          disabled={
+            currentPage === Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+          }
           className="px-3 py-1 border rounded disabled:opacity-50"
         >
           Next
