@@ -12,6 +12,12 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
   const [success, setSuccess] = useState(false);
 
   const handleShare = async () => {
+    if (jobIds.length === 0) {
+      setError("No job entries selected to share.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);

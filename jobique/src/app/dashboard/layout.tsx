@@ -8,8 +8,8 @@ import Navbar from "@/components/Navbar";
 const navItems = [
   { href: "/dashboard/jobs", label: "Jobs" },
   { href: "/dashboard/resources", label: "Resources" },
-  { href: "/dashboard/goals", label: "Goals" },
-  { href: "/dashboard/stats", label: "Stats" },
+  // { href: "/dashboard/goals", label: "Goals" },
+  // { href: "/dashboard/stats", label: "Stats" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 

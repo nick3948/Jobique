@@ -39,14 +39,15 @@ export async function GET(req: Request) {
         from: process.env.EMAIL_USER,
         to: user.email,
         subject: `Jobique Reminder: You have ${jobsToRemind.length} saved jobs!`,
-        text:
-          `You have the following saved jobs for more than ${reminderDays} days:\n\n` +
+        html:
+          `<p>You have the following saved jobs for more than ${reminderDays} days:</p><ul>` +
           jobsToRemind
             .map(
               (j) =>
-                `- ${j.title} at ${j.company} - <a href="${j.link}" target="_blank">Link</a>`
+                `<li>${j.title} at ${j.company} - ${j.link}</li>`
             )
-            .join("\n"),
+            .join("") +
+          `</ul>`,
       });
     }
   }

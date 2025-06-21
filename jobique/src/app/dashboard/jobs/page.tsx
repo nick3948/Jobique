@@ -126,23 +126,6 @@ export default function JobsPage() {
     if (tableTop) window.scrollTo({ top: tableTop - 100, behavior: "smooth" });
   }, [currentPage]);
 
-  useEffect(() => {
-    const handleClickOutsideCheckboxes = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const isCheckbox = target.closest('input[type="checkbox"]');
-      const isLabel = target.closest("label");
-
-      if (!isCheckbox && !isLabel) {
-        setSelectedJobIds([]);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutsideCheckboxes);
-    return () => {
-      document.removeEventListener("click", handleClickOutsideCheckboxes);
-    };
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -184,6 +167,16 @@ export default function JobsPage() {
         resources: "",
       });
       fetchJobs();
+      if (form.status === "Applied") {
+        const confetti = (await import("canvas-confetti")).default;
+        confetti({
+          particleCount: 300,
+          spread: 360,
+          startVelocity: 60,
+          ticks: 200,
+          origin: { x: 0.5, y: 0.5 },
+        });
+      }
     } else {
       alert("Failed to save job entry");
     }
@@ -412,7 +405,9 @@ export default function JobsPage() {
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
           disabled={selectedJobIds.length === 0}
-          onClick={() => setShowShareModal(true)}
+          onClick={(e) => {
+            setShowShareModal(true);
+          }}
         >
           Share
         </button>
@@ -426,7 +421,6 @@ export default function JobsPage() {
             <tr>
               <th className="border px-4 py-2">
                 <input
-                  className="auto-uncheck"
                   type="checkbox"
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -474,7 +468,14 @@ export default function JobsPage() {
                     </td>
                   </tr>
                   {jobsForDate.map((job) => (
-                    <tr key={job.id} className="hover:bg-gray-50">
+                    <tr
+                      key={job.id}
+                      className={`${
+                        job.status === "Applied"
+                          ? "bg-green-100 hover:bg-green-200"
+                          : "hover:bg-gray-50"
+                      }`}
+                    >
                       <td className="border px-4 py-2">
                         <input
                           type="checkbox"

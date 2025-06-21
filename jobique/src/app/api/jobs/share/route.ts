@@ -24,10 +24,11 @@ export async function POST(req: NextRequest) {
 
   let recipientUserId;
   let matchedUser;
+  let users;
 
   try {
     const usersResponse = await clerkClient.users.getUserList();
-    const users = usersResponse.data;
+    users = usersResponse.data;
     matchedUser = users.find(
       (user) =>
         user.emailAddresses.some((email) => email.emailAddress === recipient) ||
@@ -87,7 +88,6 @@ export async function POST(req: NextRequest) {
     )
   );
 
-  // Send email notification to recipient
   const nodemailer = require("nodemailer");
 
   const transporter = nodemailer.createTransport({
@@ -99,16 +99,16 @@ export async function POST(req: NextRequest) {
   });
 
   const jobTitles = sharedJobs
-    .map((job) => `- ${job.title} at ${job.company}`)
-    .join("\n");
+    .map((job, index) => `\n${index + 1}. ${job.title} at ${job.company}`)
+    .join("");
 
   const mailOptions = {
     from: `"Jobique" <${process.env.EMAIL_USER}>`,
     to: matchedUser?.emailAddresses[0]?.emailAddress,
     subject: "Job Applications Shared with You",
-    text: `Hi ${matchedUser?.firstName || ""},\n\n${
-      existing?.name || "A user"
-    } has shared the following job applications with you via Jobique:\n\n${jobTitles}\n\nYou can now view them in your Jobique dashboard.\n\n- Team Jobique`,
+    html: `Hi ${matchedUser?.firstName || ""},<br><br>${
+      users.find((u) => u.id === userId)?.firstName || "Someone"
+    } ${users.find((u) => u.id === userId)?.lastName || ""} has shared the following job applications with you via Jobique:<br><pre>${jobTitles}</pre><br>You can now view them in your <a href="https://jobique.vercel.app/dashboard">Jobique dashboard</a>.<br><br>- Team Jobique`,
   };
 
   try {
