@@ -140,7 +140,11 @@ export default function JobsPage() {
       resources: form.resources.split(",").map((r) => r.trim()),
       ...(editJobId !== null && { id: editJobId }),
     };
-
+    let oldStatus: string | null = null;
+    if (editJobId !== null) {
+      const existingJob = jobs.find((job) => job.id === editJobId);
+      oldStatus = existingJob?.status ?? null;
+    }
     const url = editJobId ? `/api/jobs/${editJobId}` : "/api/jobs";
     const method = editJobId ? "PUT" : "POST";
     const res = await fetch(url, {
@@ -160,14 +164,17 @@ export default function JobsPage() {
         pay: "",
         h1bSponsor: false,
         link: "",
-        status: "Applied",
+        status: "Saved",
         applied_date: "",
         notes: "",
         tags: "",
         resources: "",
       });
       fetchJobs();
-      if (form.status === "Applied") {
+      if (
+        form.status === "Applied" &&
+        (editJobId === null || oldStatus !== "Applied")
+      ) {
         const confetti = (await import("canvas-confetti")).default;
         confetti({
           particleCount: 300,
@@ -221,7 +228,7 @@ export default function JobsPage() {
             </select>
           </div>
           <button
-            className="px-5 py-2 bg-violet-600 text-white rounded-md"
+            className="px-5 py-2 bg-violet-600 text-white rounded-md cursor-pointer"
             onClick={() => setShowModal(true)}
           >
             + New Job Entry
@@ -283,26 +290,36 @@ export default function JobsPage() {
                 <option>Offered</option>
                 <option>Rejected</option>
               </select>
-              <input
-                type="date"
-                value={form.applied_date}
-                onChange={(e) =>
-                  setForm({ ...form, applied_date: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-              <select
-                required
-                title="h1b sponsored?"
-                value={form.h1bSponsor ? "Yes" : "No"}
-                onChange={(e) =>
-                  setForm({ ...form, h1bSponsor: e.target.value === "Yes" })
-                }
-                className="border p-2 rounded"
-              >
-                <option>No</option>
-                <option>Yes</option>
-              </select>
+              <div className="flex flex-col">
+                <label className="text-sm text-gray-700 mb-1">
+                  Applied Date
+                </label>
+                <input
+                  type="date"
+                  value={form.applied_date}
+                  onChange={(e) =>
+                    setForm({ ...form, applied_date: e.target.value })
+                  }
+                  className="border p-2 rounded"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm text-gray-700 mb-1">
+                  H1B Sponsors?
+                </label>
+                <select
+                  required
+                  title="h1b sponsored?"
+                  value={form.h1bSponsor ? "Yes" : "No"}
+                  onChange={(e) =>
+                    setForm({ ...form, h1bSponsor: e.target.value === "Yes" })
+                  }
+                  className="border p-2 rounded"
+                >
+                  <option>No</option>
+                  <option>Yes</option>
+                </select>
+              </div>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -331,13 +348,13 @@ export default function JobsPage() {
                     setShowModal(false);
                     setEditJobId(null);
                   }}
-                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                   disabled={isSubmitting}
                 >
                   Save
@@ -412,7 +429,7 @@ export default function JobsPage() {
           Share
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto border rounded-md max-h-[70vh]">
+      <div className="flex-1 border rounded-md flex-grow overflow-y-auto">
         <table
           id="job-table"
           className="min-w-full table-auto border border-gray-300"
@@ -434,7 +451,7 @@ export default function JobsPage() {
                   }
                 />
               </th>
-              <th className="border px-4 py-2">Job Title</th>
+              <th className="border px-4 py-2">Job Title ({jobs.length})</th>
               <th className="border px-4 py-2">Company</th>
               <th className="border px-4 py-2">Job Link</th>
               <th className="border px-4 py-2">Status</th>
@@ -472,7 +489,7 @@ export default function JobsPage() {
                       key={job.id}
                       className={`${
                         job.status === "Applied"
-                          ? "bg-green-100 hover:bg-green-200"
+                          ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
                           : "hover:bg-gray-50"
                       }`}
                     >
