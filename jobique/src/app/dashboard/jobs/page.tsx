@@ -490,6 +490,8 @@ export default function JobsPage() {
                       className={`${
                         job.status === "Applied"
                           ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
+                          : job.status === "Rejected"
+                          ? "bg-red-200 hover:bg-red-300"
                           : "hover:bg-gray-50"
                       }`}
                     >
