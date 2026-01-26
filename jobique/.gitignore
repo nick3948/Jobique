@@ -43,3 +43,6 @@ next-env.d.ts
 # Backup files
 jobique_backup.sql
 jobique_backup.dump
+
+# python venv
+venv/

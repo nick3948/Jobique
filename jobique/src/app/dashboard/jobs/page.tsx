@@ -57,13 +57,13 @@ export default function JobsPage() {
   );
   const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
 
-  const groupedJobs = filteredJobs.reduce((groups, job) => {
+  const groupedJobs = currentJobs.reduce((groups, job) => {
     const dateKey = job.applied_date
       ? isYesterday(new Date(job.applied_date))
         ? "Yesterday"
         : isToday(new Date(job.applied_date))
-        ? "Today"
-        : format(new Date(job.applied_date), "MM/dd/yyyy")
+          ? "Today"
+          : format(new Date(job.applied_date), "MM/dd/yyyy")
       : "Not Yet Applied!";
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(job);
@@ -451,7 +451,7 @@ export default function JobsPage() {
                   }
                 />
               </th>
-              <th className="border px-4 py-2">Job Title ({jobs.length})</th>
+              <th className="border px-4 py-2">Job Title ({filteredJobs.length})</th>
               <th className="border px-4 py-2">Company</th>
               <th className="border px-4 py-2">Job Link</th>
               <th className="border px-4 py-2">Status</th>
@@ -487,11 +487,10 @@ export default function JobsPage() {
                   {jobsForDate.map((job) => (
                     <tr
                       key={job.id}
-                      className={`${
-                        job.status === "Applied"
-                          ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
-                          : "hover:bg-gray-50"
-                      }`}
+                      className={`${job.status === "Applied"
+                        ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
+                        : "hover:bg-gray-50"
+                        }`}
                     >
                       <td className="border px-4 py-2">
                         <input
@@ -528,8 +527,8 @@ export default function JobsPage() {
                       <td className="border px-4 py-2">
                         {job.applied_date
                           ? new Date(job.applied_date).toLocaleDateString(
-                              "en-CA"
-                            )
+                            "en-CA"
+                          )
                           : "Not specified"}
                       </td>
                       <td className="border px-4 py-2">
@@ -552,11 +551,10 @@ export default function JobsPage() {
                       <td className="border px-4 py-2">{job.notes}</td>
                       <td className="border px-4 py-2">
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            job.shared
-                              ? "bg-blue-100 text-blue-600"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
+                          className={`text-xs px-2 py-1 rounded-full ${job.shared
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-600"
+                            }`}
                         >
                           {job.shared ? "Shared" : "Created"}
                         </span>
