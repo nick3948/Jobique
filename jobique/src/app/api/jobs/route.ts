@@ -111,3 +111,36 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Error deleting jobs" }, { status: 500 });
   }
 }
+
+// PATCH /api/jobs — Bulk update job status
+export async function PATCH(req: Request) {
+  const { userId } = await auth();
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const body = await req.json();
+    const ids: number[] = body.ids;
+    const status: string = body.status;
+
+    if (!Array.isArray(ids) || ids.length === 0 || !status) {
+      return NextResponse.json(
+        { error: "Invalid data provided" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.jobApplication.updateMany({
+      where: {
+        id: { in: ids },
+        userId,
+      },
+      data: { status },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("Error bulk updating jobs:", err.message);
+    return NextResponse.json({ error: "Error updating jobs" }, { status: 500 });
+  }
+}

@@ -106,6 +106,62 @@ export default function JobsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState("Saved");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedJobIds }),
+      });
+
+      if (res.ok) {
+        setSelectedJobIds([]);
+        fetchJobs();
+        setShowDeleteModal(false);
+      } else {
+        const errorText = await res.text();
+        alert("Failed to delete selected jobs: " + errorText);
+      }
+    } catch (err) {
+      console.error("Fetch DELETE error:", err);
+      alert("Something went wrong.");
+    }
+    setIsDeleting(false);
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (isUpdatingStatus) return;
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedJobIds, status: bulkStatus }),
+      });
+
+      if (res.ok) {
+        setShowStatusModal(false);
+        setBulkStatus("Saved");
+        setSelectedJobIds([]);
+        await fetchJobs();
+      } else {
+        alert("Failed to update status");
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert("Something went wrong");
+    }
+    setIsUpdatingStatus(false);
+  };
+
   const fetchJobs = async () => {
     const res = await fetch("/api/jobs");
     const data = await res.json();
@@ -368,26 +424,7 @@ export default function JobsPage() {
         <button
           className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50 cursor-pointer"
           disabled={selectedJobIds.length === 0}
-          onClick={async () => {
-            try {
-              const res = await fetch("/api/jobs", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ids: selectedJobIds }),
-              });
-
-              if (res.ok) {
-                setSelectedJobIds([]);
-                fetchJobs();
-              } else {
-                const errorText = await res.text();
-                alert("Failed to delete selected jobs: " + errorText);
-              }
-            } catch (err) {
-              console.error("Fetch DELETE error:", err);
-              alert("Something went wrong.");
-            }
-          }}
+          onClick={() => setShowDeleteModal(true)}
         >
           Delete Selected
         </button>
@@ -427,6 +464,13 @@ export default function JobsPage() {
           }}
         >
           Share
+        </button>
+        <button
+          className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+          disabled={selectedJobIds.length === 0}
+          onClick={() => setShowStatusModal(true)}
+        >
+          Change Status
         </button>
       </div>
       <div className="flex-1 border rounded-md flex-grow overflow-y-auto">
@@ -600,6 +644,72 @@ export default function JobsPage() {
           jobIds={selectedJobIds}
           onClose={() => setShowShareModal(false)}
         />
+      )}
+
+      {showStatusModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+            <h2 className="text-xl font-bold mb-4">Change Status</h2>
+            <p className="mb-4 text-gray-600">
+              Update status for {selectedJobIds.length} selected job(s).
+            </p>
+            <select
+              className="w-full border p-2 rounded mb-6"
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+            >
+              <option>Saved</option>
+              <option>Applied</option>
+              <option>In Progress</option>
+              <option>Interviewing</option>
+              <option>Offered</option>
+              <option>Rejected</option>
+            </select>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkStatusUpdate}
+                disabled={isUpdatingStatus}
+                className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+              >
+                {isUpdatingStatus ? "Updating..." : "Update"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Delete Jobs?</h2>
+            <p className="mb-6 text-gray-700">
+              Are you sure you want to delete{" "}
+              <span className="font-bold">{selectedJobIds.length}</span> job(s)?
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showContactModal && (

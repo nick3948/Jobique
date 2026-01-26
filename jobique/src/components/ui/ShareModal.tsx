@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface ShareModalProps {
   jobIds: number[];
@@ -10,6 +10,27 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [recentContacts, setRecentContacts] = useState<string[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("jobique_recent_contacts");
+    if (stored) {
+      try {
+        setRecentContacts(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse recent contacts", e);
+      }
+    }
+  }, []);
+
+  const saveToRecent = (email: string) => {
+    const updated = [email, ...recentContacts.filter((c) => c !== email)].slice(
+      0,
+      5
+    );
+    setRecentContacts(updated);
+    localStorage.setItem("jobique_recent_contacts", JSON.stringify(updated));
+  };
 
   const handleShare = async () => {
     if (jobIds.length === 0) {
@@ -37,6 +58,7 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
         setError(data.error || "Failed to share jobs");
       } else {
         setSuccess(true);
+        saveToRecent(recipient);
         setRecipient("");
       }
     } catch (err) {
@@ -61,6 +83,20 @@ export default function ShareModal({ jobIds, onClose }: ShareModalProps) {
           disabled={loading}
           className="w-full border px-4 py-2 rounded mb-4"
         />
+        {recentContacts.length > 0 && (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            {recentContacts.map((contact) => (
+              <button
+                key={contact}
+                onClick={() => setRecipient(contact)}
+                className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold border border-blue-200 hover:bg-blue-200 transition-colors"
+                title={contact}
+              >
+                {contact.charAt(0).toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <button
             onClick={handleShare}
