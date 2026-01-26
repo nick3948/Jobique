@@ -111,6 +111,52 @@ export default function JobsPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const generateAcronym = (title: string) => {
+    if (!title) return "";
+    // Clean title: remove separators like -, |, – and text after them
+    const cleanTitle = title.split(/[-|–]/)[0].trim();
+    // Generate acronym from first letters of words
+    const acronym = cleanTitle
+      .split(/\s+/)
+      .filter((word) => word.length > 0)
+      .map((word) => word[0].toUpperCase())
+      .join("");
+    return `#${acronym}`;
+  };
+
+  const handleAutoFill = async () => {
+    if (!form.link) return;
+    setIsExtracting(true);
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: form.link }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setForm((prev) => {
+          const newTitle = data.title || prev.title;
+          return {
+            ...prev,
+            title: newTitle,
+            company: data.company || prev.company,
+            location: data.location || prev.location,
+            notes: prev.notes, // Keep existing notes, do not fill with generic description
+            tags: generateAcronym(newTitle),
+          };
+        });
+      } else {
+        alert(data.error || "Could not extract details. Please fill manually.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Extraction failed.");
+    }
+    setIsExtracting(false);
+  };
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -313,14 +359,25 @@ export default function JobsPage() {
                 placeholder="Company"
                 className="border p-2 rounded"
               />
-              <input
-                required
-                value={form.link}
-                type="url"
-                onChange={(e) => setForm({ ...form, link: e.target.value })}
-                placeholder="Job Link"
-                className="border p-2 rounded"
-              />
+              <div className="flex gap-2">
+                <input
+                  required
+                  value={form.link}
+                  type="url"
+                  onChange={(e) => setForm({ ...form, link: e.target.value })}
+                  placeholder="Job Link"
+                  className="border p-2 rounded flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={handleAutoFill}
+                  disabled={isExtracting || !form.link}
+                  className="bg-teal-600 text-white px-3 py-2 rounded hover:bg-teal-700 disabled:opacity-50 text-sm whitespace-nowrap"
+                >
+                  {isExtracting ? "..." : "Auto-fill"}
+                </button>
+              </div>
+
               <input
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
