@@ -662,7 +662,105 @@ export default function JobsPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="flex-1 border rounded-xl flex-grow overflow-hidden shadow-sm bg-white border-gray-200 flex flex-col">
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-6 pb-20">
+        {filteredJobs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <Briefcase className="w-12 h-12 opacity-20 mb-3" />
+            <p>No jobs found.</p>
+          </div>
+        ) : (
+          Object.entries(groupedJobsRes).map(([dateLabel, jobsForDate]) => (
+            <div key={dateLabel} className="space-y-3">
+              <div className="px-1 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50/95 py-2 backdrop-blur-sm z-10">
+                {dateLabel}
+              </div>
+              {jobsForDate.map((job) => (
+                <div
+                  key={job.id}
+                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm active:scale-[0.99] transition-transform"
+                  onClick={() => {
+                    setJobIdInFocus(job.id);
+                    setEditJobId(job.id);
+                    // setShowModal(true); 
+                  }}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-gray-900 leading-tight">{job.title}</h3>
+                      <p className="text-gray-600 text-sm mt-0.5">{job.company}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${job.status === "Applied" ? "bg-green-100 text-green-700 border-green-200" :
+                        job.status === "Rejected" ? "bg-red-100 text-red-700 border-red-200" :
+                          job.status === "Interviewing" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                            job.status === "Offered" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                              "bg-gray-100 text-gray-700 border-gray-200"
+                      }`}>
+                      {job.status}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {job.tags.slice(0, 3).map((tag, i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                    {job.tags.length > 3 && <span className="text-[10px] text-gray-400">+{job.tags.length - 3}</span>}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+                    <div className="flex items-center text-xs text-gray-400 gap-1">
+                      <MapPin className="w-3 h-3" /> {job.location || "Remote"}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <a href={job.link} target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-50 rounded-full text-blue-600 hover:bg-blue-100" onClick={(e) => e.stopPropagation()}>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      <button
+                        className="p-2 bg-gray-50 rounded-full text-amber-600 hover:bg-amber-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setForm({
+                            title: job.title,
+                            company: job.company,
+                            location: job.location,
+                            pay: job.pay ?? "",
+                            h1bSponsor: job.h1bSponsor,
+                            link: job.link,
+                            status: job.status,
+                            applied_date: job.applied_date ? new Date(job.applied_date).toISOString().split("T")[0] : "",
+                            notes: job.notes ?? "",
+                            tags: job.tags.join(", "),
+                            resources: job.resources.join(", "),
+                          });
+                          setEditJobId(job.id);
+                          setShowModal(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="p-2 bg-gray-50 rounded-full text-red-600 hover:bg-red-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedJobIds([job.id]);
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden md:flex flex-1 border rounded-xl flex-grow overflow-hidden shadow-sm bg-white border-gray-200 flex flex-col">
         <div className="overflow-auto custom-scrollbar flex-1">
           <table
             id="job-table"
