@@ -27,6 +27,12 @@ export default function Navbar() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
+            <Link
+              href="/about"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors mr-2"
+            >
+              About
+            </Link>
             {isSignedIn && pathname === "/" && (
               <Link
                 href="/dashboard"

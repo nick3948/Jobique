@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
         if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
-                { error: "OpenAI API Key is missing. Please add it to your .env file." },
+                { error: "AI agent not available currently. Please try again later." },
                 { status: 500 }
             );
         }
