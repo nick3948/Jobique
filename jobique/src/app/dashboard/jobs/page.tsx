@@ -7,6 +7,27 @@ import { format, isToday, isYesterday } from "date-fns";
 import React from "react";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
+import {
+  Briefcase,
+  MapPin,
+  DollarSign,
+  Calendar,
+  Tag,
+  Search,
+  Filter,
+  Plus,
+  Trash2,
+  Edit2,
+  Share2,
+  MoreHorizontal,
+  ExternalLink,
+  MessageSquare,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Users
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Job {
   id: number;
@@ -111,6 +132,7 @@ export default function JobsPage() {
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [bulkStatus, setBulkStatus] = useState("Saved");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -237,10 +259,11 @@ export default function JobsPage() {
     if (isUpdatingStatus) return;
     setIsUpdatingStatus(true);
     try {
+      const applied_date = bulkStatus === "Saved" ? null : new Date();
       const res = await fetch("/api/jobs", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedJobIds, status: bulkStatus }),
+        body: JSON.stringify({ ids: selectedJobIds, status: bulkStatus, applied_date }),
       });
 
       if (res.ok) {
@@ -285,9 +308,12 @@ export default function JobsPage() {
 
     const payload = {
       ...form,
-      applied_date: form.applied_date
-        ? new Date(form.applied_date + "T00:00")
-        : null,
+      applied_date:
+        form.status === "Saved"
+          ? null
+          : form.applied_date
+            ? new Date(form.applied_date + "T00:00")
+            : new Date(),
       tags: form.tags.split(",").map((t) => t.trim()),
       resources: form.resources.split(",").map((r) => r.trim()),
       ...(editJobId !== null && { id: editJobId }),
@@ -349,41 +375,92 @@ export default function JobsPage() {
   };
   return (
     <div className="mt-5 px-4 py-6 h-[calc(100vh-90px)] overflow-hidden flex flex-col">
-      <div className="flex flex-col gap-4 mb-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Job Tracker</h1>
-          <p className="text-gray-600 mt-1">
-            Manage and optimize your job applications, documents, and
-            follow-ups.
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Job Tracker</h1>
+          <p className="text-gray-500 mt-2 text-lg">
+            Manage and optimize your job applications, documents, and follow-ups.
           </p>
         </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+
+        {/* Modern Toolbar */}
+        <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Search by role or company..."
-              className="w-full sm:w-64 px-4 py-2 border rounded-md"
+              placeholder="Search..."
+              className="pl-9 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm w-48 focus:w-64 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <select
-              className="px-4 py-2 border rounded-md text-sm text-gray-700"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option>All Statuses</option>
-              <option>Saved</option>
-              <option>Applied</option>
-              <option>Interviewing</option>
-              <option>Rejected</option>
-              <option>Offered</option>
-            </select>
           </div>
+
+          <div className="h-6 w-px bg-gray-200 mx-1"></div>
+
+          <div className="relative">
+            <div
+              className="relative flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-lg py-2 pl-3 pr-4 transition-colors border border-transparent focus-within:border-blue-100 focus-within:ring-2 focus-within:ring-blue-100"
+              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+            >
+              <Filter className="text-gray-400 w-4 h-4" />
+              <span className="text-sm text-gray-700 min-w-[5rem] font-medium">{statusFilter}</span>
+              <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${showStatusDropdown ? 'rotate-180' : ''}`} />
+            </div>
+
+            <AnimatePresence>
+              {showStatusDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowStatusDropdown(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-30 overflow-hidden py-1"
+                  >
+                    {["All Statuses", "Saved", "Applied", "Interviewing", "Rejected", "Offered"].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setShowStatusDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2
+                           ${statusFilter === status ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}
+                         `}
+                      >
+                        {status === "All Statuses" ? (
+                          <div className="w-2 h-2 rounded-full bg-gray-300" />
+                        ) : (
+                          <div className={`w-2 h-2 rounded-full 
+                             ${status === "Saved" ? "bg-gray-400" :
+                              status === "Applied" ? "bg-green-400" :
+                                status === "Interviewing" ? "bg-yellow-400" :
+                                  status === "Rejected" ? "bg-red-400" :
+                                    "bg-orange-400"
+                            }
+                           `} />
+                        )}
+                        {status}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
           <button
-            className="px-5 py-2 bg-violet-600 text-white rounded-md cursor-pointer"
+            className="ml-2 flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg cursor-pointer hover:bg-gray-800 transition-all text-sm font-medium shadow-md hover:shadow-lg active:scale-95"
             onClick={() => setShowModal(true)}
           >
-            + New Job Entry
+            <Plus className="w-4 h-4" />
+            New Job
           </button>
         </div>
       </div>
@@ -453,19 +530,7 @@ export default function JobsPage() {
                 <option>Offered</option>
                 <option>Rejected</option>
               </select>
-              <div className="flex flex-col">
-                <label className="text-sm text-gray-700 mb-1">
-                  Applied Date
-                </label>
-                <input
-                  type="date"
-                  value={form.applied_date}
-                  onChange={(e) =>
-                    setForm({ ...form, applied_date: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-              </div>
+
               <div className="flex flex-col">
                 <label className="text-sm text-gray-700 mb-1">
                   H1B Sponsors?
@@ -527,565 +592,599 @@ export default function JobsPage() {
           </div>
         </div>
       )}
-      <div className="flex gap-3 mb-3">
-        <button
-          className="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50 cursor-pointer"
-          disabled={selectedJobIds.length === 0}
-          onClick={() => setShowDeleteModal(true)}
-        >
-          Delete Selected
-        </button>
-        <button
-          className="px-4 py-2 bg-yellow-500 text-white rounded disabled:opacity-50 cursor-pointer"
-          disabled={selectedJobIds.length !== 1}
-          onClick={() => {
-            const jobToEdit = jobs.find((j) => j.id === selectedJobIds[0]);
-            if (jobToEdit) {
-              setForm({
-                title: jobToEdit.title,
-                company: jobToEdit.company,
-                location: jobToEdit.location,
-                pay: jobToEdit.pay ?? "",
-                h1bSponsor: jobToEdit.h1bSponsor,
-                link: jobToEdit.link,
-                status: jobToEdit.status,
-                applied_date: jobToEdit.applied_date
-                  ? new Date(jobToEdit.applied_date).toISOString().split("T")[0]
-                  : "",
-                notes: jobToEdit.notes ?? "",
-                tags: jobToEdit.tags.join(", "),
-                resources: jobToEdit.resources.join(", "),
-              });
-              setEditJobId(jobToEdit.id);
-              setShowModal(true);
-            }
-          }}
-        >
-          Edit Selected
-        </button>
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
-          disabled={selectedJobIds.length === 0}
-          onClick={(e) => {
-            setShowShareModal(true);
-          }}
-        >
-          Share
-        </button>
-        <button
-          className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
-          disabled={selectedJobIds.length === 0}
-          onClick={() => setShowStatusModal(true)}
-        >
-          Change Status
-        </button>
-      </div>
-      <div className="flex-1 border rounded-md flex-grow overflow-y-auto">
-        <table
-          id="job-table"
-          className="min-w-full table-auto border border-gray-300"
-        >
-          <thead className="bg-gray-100 text-sm font-semibold text-gray-700 sticky top-0 z-10">
-            <tr>
-              <th className="border px-4 py-2">
-                <input
-                  type="checkbox"
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedJobIds(jobs.map((j) => j.id));
-                    } else {
-                      setSelectedJobIds([]);
-                    }
-                  }}
-                  checked={
-                    selectedJobIds.length === jobs.length && jobs.length > 0
-                  }
-                />
-              </th>
-              <th className="border px-4 py-2">Job Title ({filteredJobs.length})</th>
-              <th className="border px-4 py-2">Company</th>
-              <th className="border px-4 py-2">Job Link</th>
-              <th className="border px-4 py-2">Status</th>
-              <th className="border px-4 py-2">Location</th>
-              <th className="border px-4 py-2">Pay</th>
-              <th className="border px-4 py-2">H1B?</th>
-              <th className="border px-4 py-2">Applied Date</th>
-              <th className="border px-4 py-2">Tags</th>
-              <th className="border px-4 py-2">Resources</th>
-              <th className="border px-4 py-2">Contacts</th>
-              <th className="border px-4 py-2">Notes</th>
-              <th className="border px-4 py-2">Type</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm text-gray-800">
-            {filteredJobs.length === 0 ? (
-              <tr>
-                <td colSpan={14} className="text-center py-4 text-gray-500">
-                  No job applications found. Start by adding one!
-                </td>
-              </tr>
-            ) : (
-              Object.entries(groupedJobsRes).map(([dateLabel, jobsForDate]) => (
-                <React.Fragment key={dateLabel}>
-                  <tr>
-                    <td
-                      colSpan={14}
-                      className="bg-gray-200 font-semibold px-4 py-2"
-                    >
-                      {dateLabel}
-                    </td>
-                  </tr>
-                  {jobsForDate.map((job) => (
-                    <tr
-                      key={job.id}
-                      className={`${job.status === "Applied"
-                          ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
-                          : job.status === "In Progress"
-                            ? "bg-[#BFDBFE] hover:bg-[#93C5FD]"
-                            : job.status === "Interviewing"
-                              ? "bg-[#FEF08A] hover:bg-[#FDE047]"
-                              : job.status === "Offered"
-                                ? "bg-[#FDBA74] hover:bg-[#FB923C]"
-                                : job.status === "Rejected"
-                                  ? "bg-[#FECACA] hover:bg-[#F87171]"
-                                  : "bg-white hover:bg-gray-50"
-                        }`}
-                    >
-                      <td className="border px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedJobIds.includes(job.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedJobIds((prev) => [...prev, job.id]);
-                            } else {
-                              setSelectedJobIds((prev) =>
-                                prev.filter((id) => id !== job.id)
-                              );
-                            }
-                          }}
-                        />
-                      </td>
-                      <td className="border px-4 py-2">{job.title}</td>
-                      <td className="border px-4 py-2">{job.company}</td>
-                      <td className="border px-4 py-2 text-blue-600 underline">
-                        <a
-                          href={job.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Link
-                        </a>
-                      </td>
-                      <td className="border px-4 py-2">{job.status}</td>
-                      <td className="border px-4 py-2">{job.location}</td>
-                      <td className="border px-4 py-2">{job.pay}</td>
-                      <td className="border px-4 py-2">
-                        {job.h1bSponsor ? "Yes" : "No"}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {job.applied_date
-                          ? new Date(job.applied_date).toLocaleDateString(
-                            "en-CA"
-                          )
-                          : "Not specified"}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {job.tags.join(", ")}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {job.resources.join(", ")}
-                      </td>
-                      <td className="border px-4 py-2">
-                        <button
-                          className="text-sm text-blue-600 hover:underline"
-                          onClick={() => {
-                            setJobIdInFocus(job.id);
-                            setShowContactModal(true);
-                          }}
-                        >
-                          Contacts
-                        </button>
-                      </td>
-                      <td className="border px-4 py-2">{job.notes}</td>
-                      <td className="border px-4 py-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${job.shared
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                          {job.shared ? "Shared" : "Created"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center mt-4 space-x-2">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span className="px-2">
-          Page {currentPage} of {Math.ceil(filteredJobs.length / JOBS_PER_PAGE)}
-        </span>
-        <button
-          onClick={() =>
-            setCurrentPage((prev) =>
-              prev < Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
-                ? prev + 1
-                : prev
-            )
-          }
-          disabled={
-            currentPage === Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
-          }
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
-      {showShareModal && (
-        <ShareModal
-          jobIds={selectedJobIds}
-          onClose={() => setShowShareModal(false)}
-        />
-      )}
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedJobIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex items-center gap-3 mb-4 p-2 bg-blue-50/50 backdrop-blur-sm border border-blue-100 rounded-xl"
+          >
+            <span className="text-sm font-medium text-blue-700 px-3">
+              {selectedJobIds.length} Selected
+            </span>
+            <div className="h-6 w-px bg-blue-200"></div>
 
-      {showStatusModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
-            <h2 className="text-xl font-bold mb-4">Change Status</h2>
-            <p className="mb-4 text-gray-600">
-              Update status for {selectedJobIds.length} selected job(s).
-            </p>
-            <select
-              className="w-full border p-2 rounded mb-6"
-              value={bulkStatus}
-              onChange={(e) => setBulkStatus(e.target.value)}
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={() => setShowDeleteModal(true)}
             >
-              <option>Saved</option>
-              <option>Applied</option>
-              <option>In Progress</option>
-              <option>Interviewing</option>
-              <option>Offered</option>
-              <option>Rejected</option>
-            </select>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowStatusModal(false)}
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkStatusUpdate}
-                disabled={isUpdatingStatus}
-                className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
-              >
-                {isUpdatingStatus ? "Updating..." : "Update"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
-            <h2 className="text-xl font-bold text-red-600 mb-4">Delete Jobs?</h2>
-            <p className="mb-6 text-gray-700">
-              Are you sure you want to delete{" "}
-              <span className="font-bold">{selectedJobIds.length}</span> job(s)?
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
+              disabled={selectedJobIds.length !== 1}
+              onClick={() => {
+                const jobToEdit = jobs.find((j) => j.id === selectedJobIds[0]);
+                if (jobToEdit) {
+                  setForm({
+                    title: jobToEdit.title,
+                    company: jobToEdit.company,
+                    location: jobToEdit.location,
+                    pay: jobToEdit.pay ?? "",
+                    h1bSponsor: jobToEdit.h1bSponsor,
+                    link: jobToEdit.link,
+                    status: jobToEdit.status,
+                    applied_date: jobToEdit.applied_date
+                      ? new Date(jobToEdit.applied_date).toISOString().split("T")[0]
+                      : "",
+                    notes: jobToEdit.notes ?? "",
+                    tags: jobToEdit.tags.join(", "),
+                    resources: jobToEdit.resources.join(", "),
+                  });
+                  setEditJobId(jobToEdit.id);
+                  setShowModal(true);
+                }
+              }}
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
 
-      {showContactModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                Contacts for{" "}
-                {(() => {
-                  const job = jobs.find((j) => j.id === jobIdInFocus);
-                  return job ? `${job.title} @ ${job.company}` : "Selected Job";
-                })()}
-              </h2>
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="text-gray-600 hover:text-black"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mt-6 py-3">
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                onClick={() => setShowNewContactForm(true)}
-              >
-                + Add New Contact
-              </button>
-            </div>
-            <div className="space-y-4">
-              {contacts.length === 0 ? (
-                <p className="text-gray-500">No contacts added yet.</p>
-              ) : (
-                contacts.map((contact, idx) => (
-                  <div key={idx} className="border p-3 rounded shadow-sm">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{contact.name}</p>
-                        <a
-                          href={contact.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 text-sm"
-                        >
-                          LinkedIn
-                        </a>
-                        <div className="mt-1 text-sm text-gray-600">
-                          Tags:{" "}
-                          {contact.tags
-                            ?.split(",")
-                            .map((tag: string, i: number) => (
-                              <span
-                                key={i}
-                                className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-1"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                        </div>
-                      </div>
-                      <div className="space-x-2">
-                        <button
-                          className="text-purple-600 text-sm cursor-pointer hover:font-bold"
-                          onClick={() => handleGenerateMessage(contact)}
-                        >
-                          ✨ Draft Message
-                        </button>
-                        <button
-                          className="text-yellow-600 text-sm cursor-pointer"
-                          onClick={() => {
-                            setEditingContact(contact);
-                            setNewContact({
-                              name: contact.name,
-                              linkedin: contact.linkedin,
-                              tags: contact.tags,
-                              notes: contact.notes || "",
-                            });
-                            setShowNewContactForm(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="text-red-600 text-sm cursor-pointer"
-                          onClick={async () => {
-                            const res = await fetch("/api/contacts", {
-                              method: "DELETE",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ id: contact.id }),
-                            });
-                            if (res.ok) {
-                              await fetchContacts();
-                            } else {
-                              toast.error("Failed to delete contact");
-                            }
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                    {contact.notes && (
-                      <p className="mt-2 text-sm text-gray-700">
-                        Note: {contact.notes}
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
 
-            {showNewContactForm && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-60">
-                <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      if (isSubmittingContact) return;
-                      setIsSubmittingContact(true);
-
-                      const method = editingContact ? "PUT" : "POST";
-                      const url = editingContact
-                        ? `/api/contacts/${editingContact.id}`
-                        : "/api/contacts";
-
-                      const res = await fetch(url, {
-                        method,
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          ...newContact,
-                          email: "",
-                          jobId: jobIdInFocus,
-                        }),
-                      });
-
-                      setIsSubmittingContact(false);
-
-                      if (res.ok) {
-                        setNewContact({
-                          name: "",
-                          linkedin: "",
-                          tags: "",
-                          notes: "",
-                        });
-                        setEditingContact(null);
-                        setShowNewContactForm(false);
-                        await fetchContacts();
-                      } else if (res.status === 400) {
-                        toast.error(
-                          "This contact already exists for the selected job."
-                        );
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              onClick={() => setShowStatusModal(true)}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+              Change Status
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="flex-1 border rounded-xl flex-grow overflow-hidden shadow-sm bg-white border-gray-200 flex flex-col">
+        <div className="overflow-auto custom-scrollbar flex-1">
+          <table
+            id="job-table"
+            className="min-w-full table-auto text-left"
+          >
+            <thead className="glass-header sticky top-0 z-10 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-3 w-12">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedJobIds(jobs.map((j) => j.id));
                       } else {
-                        toast.error("Failed to save contact");
+                        setSelectedJobIds([]);
                       }
                     }}
-                  >
-                    <h3 className="text-lg font-bold mb-4">
-                      {editingContact ? "Edit Contact" : "Add New Contact"}
-                    </h3>
-                    <input
-                      required
-                      type="text"
-                      className="w-full border p-2 rounded mb-3"
-                      placeholder="Name"
-                      value={newContact.name}
-                      onChange={(e) =>
-                        setNewContact({ ...newContact, name: e.target.value })
-                      }
-                    />
-                    <input
-                      required
-                      type="url"
-                      className="w-full border p-2 rounded mb-3"
-                      placeholder="LinkedIn URL"
-                      value={newContact.linkedin}
-                      onChange={(e) =>
-                        setNewContact({
-                          ...newContact,
-                          linkedin: e.target.value,
-                        })
-                      }
-                    />
-                    <input
-                      className="w-full border p-2 rounded mb-3"
-                      placeholder="Tags (comma separated)"
-                      value={newContact.tags}
-                      onChange={(e) =>
-                        setNewContact({ ...newContact, tags: e.target.value })
-                      }
-                    />
-                    <textarea
-                      className="w-full border p-2 rounded mb-4"
-                      placeholder="Notes (optional)"
-                      value={newContact.notes}
-                      onChange={(e) =>
-                        setNewContact({ ...newContact, notes: e.target.value })
-                      }
-                    ></textarea>
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowNewContactForm(false);
-                          setEditingContact(null);
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-300 rounded"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSubmittingContact}
-                        className="px-3 py-1 text-sm bg-green-600 text-white rounded disabled:opacity-50"
-                      >
-                        Save Contact
-                      </button>
+                    checked={
+                      selectedJobIds.length === jobs.length && jobs.length > 0
+                    }
+                  />
+                </th>
+                <th className="px-6 py-3">Job Title ({filteredJobs.length})</th>
+                <th className="px-6 py-3">Company</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Location</th>
+                <th className="px-6 py-3">Applied</th>
+                <th className="px-6 py-3">Links/Actions</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm divide-y divide-gray-100">
+              {filteredJobs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-gray-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <Briefcase className="w-8 h-8 opacity-20" />
+                      <p>No job applications found. Start by adding one!</p>
                     </div>
-                  </form>
-                </div>
-              </div>
-            )}
+                  </td>
+                </tr>
+              ) : (
+                Object.entries(groupedJobsRes).map(([dateLabel, jobsForDate]) => (
+                  <React.Fragment key={dateLabel}>
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="bg-gray-50/50 px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {dateLabel}
+                      </td>
+                    </tr>
+                    {jobsForDate.map((job) => (
+                      <tr
+                        key={job.id}
+                        className={`group transition-colors ${job.status === "Applied"
+                          ? "bg-green-100/60 hover:bg-green-100"
+                          : job.status === "In Progress"
+                            ? "bg-blue-100/60 hover:bg-blue-100"
+                            : job.status === "Interviewing"
+                              ? "bg-yellow-100/60 hover:bg-yellow-100"
+                              : job.status === "Offered"
+                                ? "bg-orange-100/60 hover:bg-orange-100"
+                                : job.status === "Rejected"
+                                  ? "bg-red-100/60 hover:bg-red-100"
+                                  : "bg-white hover:bg-gray-50"
+                          }`}
+                      >
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 opacity-0 group-hover:opacity-100 transition-opacity checked:opacity-100"
+                            checked={selectedJobIds.includes(job.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedJobIds((prev) => [...prev, job.id]);
+                              } else {
+                                setSelectedJobIds((prev) =>
+                                  prev.filter((id) => id !== job.id)
+                                );
+                              }
+                            }}
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-gray-900 flex items-center gap-2">
+                            {job.title}
+                            {job.shared && (
+                              <div className="bg-blue-100 p-1 rounded-full group/shared relative cursor-help">
+                                <Users className="w-3 h-3 text-blue-600" />
+                                <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover/shared:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                  Shared with you
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2 mt-1">
+                            {job.tags.map((tag, i) => (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 flex items-center gap-1">
+                                <Tag className="w-3 h-3" /> {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-gray-700">
+                          {job.company}
+                          {job.h1bSponsor && (
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-100">H1B</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border shadow-sm ${job.status === "Applied" ? "bg-green-200 text-green-800 border-green-300" :
+                            job.status === "Rejected" ? "bg-red-200 text-red-800 border-red-300" :
+                              job.status === "Interviewing" ? "bg-yellow-200 text-yellow-800 border-yellow-300" :
+                                job.status === "Offered" ? "bg-orange-200 text-orange-900 border-orange-300" :
+                                  "bg-gray-200 text-gray-700 border-gray-300"
+                            }`}>
+                            {job.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 text-sm flex flex-col gap-1">
+                          <div className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</div>
+                          {job.pay && <div className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {job.pay}</div>}
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 text-sm">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {job.applied_date
+                              ? new Date(job.applied_date).toLocaleDateString("en-CA", { month: 'short', day: 'numeric' })
+                              : "-"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <a href={job.link} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                            <button
+                              className="text-gray-400 hover:text-purple-600 transition-colors relative"
+                              onClick={() => {
+                                setJobIdInFocus(job.id);
+                                setShowContactModal(true);
+                              }}
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-gray-50/50">
+          <div className="text-sm text-gray-500">
+            Showing {indexOfFirstJob + 1} to {Math.min(indexOfLastJob, filteredJobs.length)} of {filteredJobs.length} entries
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 border rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <span className="text-sm font-medium text-gray-700 px-2">
+              Page {currentPage} of {Math.ceil(filteredJobs.length / JOBS_PER_PAGE)}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) =>
+                  prev < Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+                    ? prev + 1
+                    : prev
+                )
+              }
+              disabled={
+                currentPage === Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+              }
+              className="p-2 border rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
         </div>
-      )}
+        {showShareModal && (
+          <ShareModal
+            jobIds={selectedJobIds}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
 
-      {showMessageModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[60]">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-xl font-bold mb-4">
-              Draft Message for {messageParams?.contactName}
-            </h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Generated Message
-              </label>
-              <textarea
-                className="w-full border p-2 rounded h-40"
-                value={isGeneratingMessage ? "Generating..." : generatedMessage}
-                readOnly
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowMessageModal(false)}
-                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer"
+        {showStatusModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+              <h2 className="text-xl font-bold mb-4">Change Status</h2>
+              <p className="mb-4 text-gray-600">
+                Update status for {selectedJobIds.length} selected job(s).
+              </p>
+              <select
+                className="w-full border p-2 rounded mb-6"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
               >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedMessage);
-                  toast.success("Message copied to clipboard!");
-                }}
-                disabled={isGeneratingMessage || !generatedMessage}
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
-              >
-                Copy to Clipboard
-              </button>
+                <option>Saved</option>
+                <option>Applied</option>
+                <option>In Progress</option>
+                <option>Interviewing</option>
+                <option>Offered</option>
+                <option>Rejected</option>
+              </select>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkStatusUpdate}
+                  disabled={isUpdatingStatus}
+                  className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {isUpdatingStatus ? "Updating..." : "Update"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {showDeleteModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+              <h2 className="text-xl font-bold text-red-600 mb-4">Delete Jobs?</h2>
+              <p className="mb-6 text-gray-700">
+                Are you sure you want to delete{" "}
+                <span className="font-bold">{selectedJobIds.length}</span> job(s)?
+                This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showContactModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  Contacts for{" "}
+                  {(() => {
+                    const job = jobs.find((j) => j.id === jobIdInFocus);
+                    return job ? `${job.title} @ ${job.company}` : "Selected Job";
+                  })()}
+                </h2>
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="text-gray-600 hover:text-black"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="mt-6 py-3">
+                <button
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  onClick={() => setShowNewContactForm(true)}
+                >
+                  + Add New Contact
+                </button>
+              </div>
+              <div className="space-y-4">
+                {contacts.length === 0 ? (
+                  <p className="text-gray-500">No contacts added yet.</p>
+                ) : (
+                  contacts.map((contact, idx) => (
+                    <div key={idx} className="border p-3 rounded shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{contact.name}</p>
+                          <a
+                            href={contact.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 text-sm"
+                          >
+                            LinkedIn
+                          </a>
+                          <div className="mt-1 text-sm text-gray-600">
+                            Tags:{" "}
+                            {contact.tags
+                              ?.split(",")
+                              .map((tag: string, i: number) => (
+                                <span
+                                  key={i}
+                                  className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-1"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                        <div className="space-x-2">
+                          <button
+                            className="text-purple-600 text-sm cursor-pointer hover:font-bold"
+                            onClick={() => handleGenerateMessage(contact)}
+                          >
+                            ✨ Draft Message
+                          </button>
+                          <button
+                            className="text-yellow-600 text-sm cursor-pointer"
+                            onClick={() => {
+                              setEditingContact(contact);
+                              setNewContact({
+                                name: contact.name,
+                                linkedin: contact.linkedin,
+                                tags: contact.tags,
+                                notes: contact.notes || "",
+                              });
+                              setShowNewContactForm(true);
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="text-red-600 text-sm cursor-pointer"
+                            onClick={async () => {
+                              const res = await fetch("/api/contacts", {
+                                method: "DELETE",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ id: contact.id }),
+                              });
+                              if (res.ok) {
+                                await fetchContacts();
+                              } else {
+                                toast.error("Failed to delete contact");
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      {contact.notes && (
+                        <p className="mt-2 text-sm text-gray-700">
+                          Note: {contact.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {showNewContactForm && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-60">
+                  <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (isSubmittingContact) return;
+                        setIsSubmittingContact(true);
+
+                        const method = editingContact ? "PUT" : "POST";
+                        const url = editingContact
+                          ? `/api/contacts/${editingContact.id}`
+                          : "/api/contacts";
+
+                        const res = await fetch(url, {
+                          method,
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            ...newContact,
+                            email: "",
+                            jobId: jobIdInFocus,
+                          }),
+                        });
+
+                        setIsSubmittingContact(false);
+
+                        if (res.ok) {
+                          setNewContact({
+                            name: "",
+                            linkedin: "",
+                            tags: "",
+                            notes: "",
+                          });
+                          setEditingContact(null);
+                          setShowNewContactForm(false);
+                          await fetchContacts();
+                        } else if (res.status === 400) {
+                          toast.error(
+                            "This contact already exists for the selected job."
+                          );
+                        } else {
+                          toast.error("Failed to save contact");
+                        }
+                      }}
+                    >
+                      <h3 className="text-lg font-bold mb-4">
+                        {editingContact ? "Edit Contact" : "Add New Contact"}
+                      </h3>
+                      <input
+                        required
+                        type="text"
+                        className="w-full border p-2 rounded mb-3"
+                        placeholder="Name"
+                        value={newContact.name}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, name: e.target.value })
+                        }
+                      />
+                      <input
+                        required
+                        type="url"
+                        className="w-full border p-2 rounded mb-3"
+                        placeholder="LinkedIn URL"
+                        value={newContact.linkedin}
+                        onChange={(e) =>
+                          setNewContact({
+                            ...newContact,
+                            linkedin: e.target.value,
+                          })
+                        }
+                      />
+                      <input
+                        className="w-full border p-2 rounded mb-3"
+                        placeholder="Tags (comma separated)"
+                        value={newContact.tags}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, tags: e.target.value })
+                        }
+                      />
+                      <textarea
+                        className="w-full border p-2 rounded mb-4"
+                        placeholder="Notes (optional)"
+                        value={newContact.notes}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, notes: e.target.value })
+                        }
+                      ></textarea>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowNewContactForm(false);
+                            setEditingContact(null);
+                          }}
+                          className="px-3 py-1 text-sm bg-gray-300 rounded"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingContact}
+                          className="px-3 py-1 text-sm bg-green-600 text-white rounded disabled:opacity-50"
+                        >
+                          Save Contact
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showMessageModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[60]">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+              <h2 className="text-xl font-bold mb-4">
+                Draft Message for {messageParams?.contactName}
+              </h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Generated Message
+                </label>
+                <textarea
+                  className="w-full border p-2 rounded h-40"
+                  value={isGeneratingMessage ? "Generating..." : generatedMessage}
+                  readOnly
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowMessageModal(false)}
+                  className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedMessage);
+                    toast.success("Message copied to clipboard!");
+                  }}
+                  disabled={isGeneratingMessage || !generatedMessage}
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                >
+                  Copy to Clipboard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

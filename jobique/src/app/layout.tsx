@@ -4,15 +4,18 @@ import { Toaster } from 'sonner';
 import '../globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { ReactNode } from 'react'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en">
-        <body>
+        <body className={inter.className}>
           {children}
           <Analytics />
-          <Toaster richColors position="top-center" />
+          <Toaster richColors position="top-center" closeButton theme="light" />
         </body>
       </html>
     </ClerkProvider>

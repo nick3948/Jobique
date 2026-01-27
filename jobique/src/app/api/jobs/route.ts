@@ -122,6 +122,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const ids: number[] = body.ids;
     const status: string = body.status;
+    const applied_date = body.applied_date;
 
     if (!Array.isArray(ids) || ids.length === 0 || !status) {
       return NextResponse.json(
@@ -130,12 +131,17 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const updateData: any = { status };
+    if (applied_date !== undefined) {
+      updateData.applied_date = applied_date === null ? null : new Date(applied_date);
+    }
+
     await prisma.jobApplication.updateMany({
       where: {
         id: { in: ids },
         userId,
       },
-      data: { status },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true });
