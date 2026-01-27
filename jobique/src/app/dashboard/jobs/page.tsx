@@ -3,7 +3,10 @@
 import ShareModal from "@/components/ui/ShareModal";
 import { useEffect, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
+
 import React from "react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 interface Job {
   id: number;
@@ -22,6 +25,7 @@ interface Job {
 }
 
 export default function JobsPage() {
+  const { user } = useUser();
   const [showModal, setShowModal] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
@@ -112,6 +116,14 @@ export default function JobsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [generatedMessage, setGeneratedMessage] = useState("");
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+  const [messageParams, setMessageParams] = useState<{
+    contactName: string;
+    jobTitle: string;
+    company: string;
+  } | null>(null);
 
   const generateAcronym = (title: string) => {
     if (!title) return "";
@@ -149,13 +161,51 @@ export default function JobsPage() {
           };
         });
       } else {
-        alert(data.error || "Could not extract details. Please fill manually.");
+        toast.error(data.error || "Could not extract details. Please fill manually.");
       }
     } catch (e) {
       console.error(e);
-      alert("Extraction failed.");
+      toast.error("Extraction failed.");
     }
     setIsExtracting(false);
+  };
+
+  const handleGenerateMessage = async (contact: Contact) => {
+    const job = jobs.find((j) => j.id === jobIdInFocus);
+    if (!job) return;
+
+    setMessageParams({
+      contactName: contact.name,
+      jobTitle: job.title,
+      company: job.company,
+    });
+    setShowMessageModal(true);
+    setGeneratedMessage("");
+    setIsGeneratingMessage(true);
+
+    try {
+      const res = await fetch("/api/ai/generate-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobTitle: job.title,
+          company: job.company,
+          contactName: contact.name,
+          contactRole: "",
+          userName: user?.fullName || user?.firstName || "Me",
+          tone: "Professional",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGeneratedMessage(data.message);
+      } else {
+        setGeneratedMessage("Error: " + data.error);
+      }
+    } catch (e) {
+      setGeneratedMessage("Failed to generate message.");
+    }
+    setIsGeneratingMessage(false);
   };
 
   const handleDelete = async () => {
@@ -174,11 +224,11 @@ export default function JobsPage() {
         setShowDeleteModal(false);
       } else {
         const errorText = await res.text();
-        alert("Failed to delete selected jobs: " + errorText);
+        toast.error("Failed to delete selected jobs: " + errorText);
       }
     } catch (err) {
       console.error("Fetch DELETE error:", err);
-      alert("Something went wrong.");
+      toast.error("Something went wrong.");
     }
     setIsDeleting(false);
   };
@@ -199,11 +249,11 @@ export default function JobsPage() {
         setSelectedJobIds([]);
         await fetchJobs();
       } else {
-        alert("Failed to update status");
+        toast.error("Failed to update status");
       }
     } catch (err) {
       console.error("Error updating status:", err);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     }
     setIsUpdatingStatus(false);
   };
@@ -287,7 +337,7 @@ export default function JobsPage() {
         });
       }
     } else {
-      alert("Failed to save job entry");
+      toast.error("Failed to save job entry");
     }
     setEditJobId(null);
   };
@@ -589,8 +639,16 @@ export default function JobsPage() {
                     <tr
                       key={job.id}
                       className={`${job.status === "Applied"
-                        ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
-                        : "hover:bg-gray-50"
+                          ? "bg-[#B0DB9C] hover:bg-[#A3CC8F]"
+                          : job.status === "In Progress"
+                            ? "bg-[#BFDBFE] hover:bg-[#93C5FD]"
+                            : job.status === "Interviewing"
+                              ? "bg-[#FEF08A] hover:bg-[#FDE047]"
+                              : job.status === "Offered"
+                                ? "bg-[#FDBA74] hover:bg-[#FB923C]"
+                                : job.status === "Rejected"
+                                  ? "bg-[#FECACA] hover:bg-[#F87171]"
+                                  : "bg-white hover:bg-gray-50"
                         }`}
                     >
                       <td className="border px-4 py-2">
@@ -828,6 +886,12 @@ export default function JobsPage() {
                       </div>
                       <div className="space-x-2">
                         <button
+                          className="text-purple-600 text-sm cursor-pointer hover:font-bold"
+                          onClick={() => handleGenerateMessage(contact)}
+                        >
+                          ✨ Draft Message
+                        </button>
+                        <button
                           className="text-yellow-600 text-sm cursor-pointer"
                           onClick={() => {
                             setEditingContact(contact);
@@ -853,7 +917,7 @@ export default function JobsPage() {
                             if (res.ok) {
                               await fetchContacts();
                             } else {
-                              alert("Failed to delete contact");
+                              toast.error("Failed to delete contact");
                             }
                           }}
                         >
@@ -908,11 +972,11 @@ export default function JobsPage() {
                         setShowNewContactForm(false);
                         await fetchContacts();
                       } else if (res.status === 400) {
-                        alert(
+                        toast.error(
                           "This contact already exists for the selected job."
                         );
                       } else {
-                        alert("Failed to save contact");
+                        toast.error("Failed to save contact");
                       }
                     }}
                   >
@@ -981,6 +1045,44 @@ export default function JobsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showMessageModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-[60]">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold mb-4">
+              Draft Message for {messageParams?.contactName}
+            </h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Generated Message
+              </label>
+              <textarea
+                className="w-full border p-2 rounded h-40"
+                value={isGeneratingMessage ? "Generating..." : generatedMessage}
+                readOnly
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowMessageModal(false)}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedMessage);
+                  toast.success("Message copied to clipboard!");
+                }}
+                disabled={isGeneratingMessage || !generatedMessage}
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+              >
+                Copy to Clipboard
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Resource {
   id: number;
@@ -40,7 +41,7 @@ export default function ResourcesPage() {
       fetchResources();
       setShowModal(false);
     } else {
-      alert("Failed to save resource");
+      toast.error("Failed to save resource");
     }
   };
 
@@ -55,7 +56,7 @@ export default function ResourcesPage() {
       setSelectedIds([]);
       fetchResources();
     } else {
-      alert("Failed to delete resources");
+      toast.error("Failed to delete resources");
     }
   };
 
