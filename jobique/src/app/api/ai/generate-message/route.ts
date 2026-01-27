@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
+import { currentUser } from "@clerk/nextjs/server";
 import OpenAI from "openai";
 
 export async function POST(req: Request) {
     try {
+        const user = await currentUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const allowedUsers = process.env.ALLOWED_USERS?.split(",") || [];
+        const userEmail = user.emailAddresses[0]?.emailAddress;
+
+        if (allowedUsers.length > 0 && (!userEmail || !allowedUsers.includes(userEmail))) {
+            return NextResponse.json(
+                { message: "This feature is currently in private beta. Please contact the admin for access." },
+                { status: 200 }
+            );
+        }
+
         const { jobTitle, company, contactName, contactRole, userName, tone } = await req.json();
 
         if (!process.env.OPENAI_API_KEY) {
