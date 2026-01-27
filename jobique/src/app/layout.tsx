@@ -12,6 +12,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en">
+        <head>
+          <title>Jobique</title>
+          <meta name="description" content="Job Application Tracker" />
+          <link rel="icon" href="/icon.png" type="image/png" sizes="any" />
+        </head>
         <body className={inter.className}>
           {children}
           <Analytics />

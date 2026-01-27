@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Briefcase } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
@@ -15,12 +15,14 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 p-1.5 rounded-lg text-white shadow-md group-hover:scale-105 transition-transform">
-              <Briefcase className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 font-sans tracking-tight">
-              Jobique
-            </span>
+            <Image
+              src="/images/logo_main.png"
+              alt="Jobique Logo"
+              width={120}
+              height={40}
+              className="h-10 w-auto object-contain"
+              priority
+            />
           </Link>
 
           {/* Right Side Actions */}
