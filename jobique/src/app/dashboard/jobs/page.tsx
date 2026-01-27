@@ -692,10 +692,10 @@ export default function JobsPage() {
                       <p className="text-gray-600 text-sm mt-0.5">{job.company}</p>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${job.status === "Applied" ? "bg-green-100 text-green-700 border-green-200" :
-                        job.status === "Rejected" ? "bg-red-100 text-red-700 border-red-200" :
-                          job.status === "Interviewing" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
-                            job.status === "Offered" ? "bg-orange-100 text-orange-700 border-orange-200" :
-                              "bg-gray-100 text-gray-700 border-gray-200"
+                      job.status === "Rejected" ? "bg-red-100 text-red-700 border-red-200" :
+                        job.status === "Interviewing" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                          job.status === "Offered" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                            "bg-gray-100 text-gray-700 border-gray-200"
                       }`}>
                       {job.status}
                     </span>
@@ -872,7 +872,7 @@ export default function JobsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border shadow-sm ${job.status === "Applied" ? "bg-green-200 text-green-800 border-green-300" :
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border shadow-sm whitespace-nowrap inline-block ${job.status === "Applied" ? "bg-green-200 text-green-800 border-green-300" :
                             job.status === "Rejected" ? "bg-red-200 text-red-800 border-red-300" :
                               job.status === "Interviewing" ? "bg-yellow-200 text-yellow-800 border-yellow-300" :
                                 job.status === "Offered" ? "bg-orange-200 text-orange-900 border-orange-300" :
@@ -886,7 +886,7 @@ export default function JobsPage() {
                           {job.pay && <div className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {job.pay}</div>}
                         </td>
                         <td className="px-6 py-4 text-gray-500 text-sm">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 whitespace-nowrap">
                             <Calendar className="w-3 h-3" />
                             {job.applied_date
                               ? new Date(job.applied_date).toLocaleDateString("en-CA", { month: 'short', day: 'numeric' })
