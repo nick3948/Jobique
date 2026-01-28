@@ -25,7 +25,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Users
+  Users,
+  FileText,
+  Upload,
+  Loader2,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,6 +46,7 @@ interface Job {
   notes?: string;
   tags: string[];
   resources: string[];
+  resumeUrl?: string;
   shared?: boolean;
 }
 
@@ -62,6 +67,7 @@ export default function JobsPage() {
     notes: "",
     tags: "",
     resources: "",
+    resumeUrl: "",
   });
   const [editJobId, setEditJobId] = useState<number | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -69,6 +75,7 @@ export default function JobsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [showStatusSelect, setShowStatusSelect] = useState(false);
 
   const JOBS_PER_PAGE = 15;
   const [currentPage, setCurrentPage] = useState(1);
@@ -230,6 +237,70 @@ export default function JobsPage() {
     setIsGeneratingMessage(false);
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // 1. Get Presigned URL
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // 2. Upload to S3
+      const uploadRes = await fetch(data.signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      // 3. Save URL to form
+      setForm((prev) => ({ ...prev, resumeUrl: data.fileUrl }));
+      toast.success("Resume uploaded successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload resume");
+    }
+    setIsUploading(false);
+  };
+
+  const handleViewResume = async (fileUrl: string) => {
+    try {
+      const res = await fetch("/api/upload/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      const data = await res.json();
+      if (data.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      } else {
+        toast.error("Failed to get secure link");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error opening resume");
+    }
+  };
+
   const handleDelete = async () => {
     if (isDeleting) return;
     setIsDeleting(true);
@@ -347,6 +418,7 @@ export default function JobsPage() {
         notes: "",
         tags: "",
         resources: "",
+        resumeUrl: "",
       });
       fetchJobs();
       if (
@@ -505,6 +577,41 @@ export default function JobsPage() {
                 </button>
               </div>
 
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="resume-upload"
+                  />
+                  <label
+                    htmlFor="resume-upload"
+                    className={`flex items-center gap-2 px-3 py-2 border rounded cursor-pointer w-full hover:bg-gray-50 transition-colors ${form.resumeUrl ? 'border-green-200 bg-green-50' : ''}`}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                    ) : (
+                      <Upload className={`w-4 h-4 ${form.resumeUrl ? 'text-green-600' : 'text-gray-500'}`} />
+                    )}
+                    <span className={`text-sm ${form.resumeUrl ? 'text-green-700' : 'text-gray-600'}`}>
+                      {form.resumeUrl ? "Resume Attached" : "Upload Resume (PDF)"}
+                    </span>
+                  </label>
+                  {form.resumeUrl && (
+                    <button
+                      type="button"
+                      onClick={() => handleViewResume(form.resumeUrl!)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      title="View Resume"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <input
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -517,19 +624,71 @@ export default function JobsPage() {
                 placeholder="Pay"
                 className="border p-2 rounded"
               />
-              <select
-                required
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="border p-2 rounded"
-              >
-                <option>Saved</option>
-                <option>Applied</option>
-                <option>In Progress</option>
-                <option>Interviewing</option>
-                <option>Offered</option>
-                <option>Rejected</option>
-              </select>
+              <div className="relative">
+                <div
+                  className="border p-2 rounded flex items-center justify-between cursor-pointer bg-white hover:border-gray-400 transition-colors"
+                  onClick={() => setShowStatusSelect(!showStatusSelect)}
+                >
+                  <span className={`flex items-center gap-2 text-sm font-medium
+                    ${form.status === "Saved" ? "text-gray-600" :
+                      form.status === "Applied" ? "text-green-600" :
+                        form.status === "Interviewing" ? "text-yellow-600" :
+                          form.status === "Offered" ? "text-orange-600" :
+                            form.status === "Rejected" ? "text-red-600" :
+                              "text-blue-600"
+                    }`}>
+                    <div className={`w-2 h-2 rounded-full
+                      ${form.status === "Saved" ? "bg-gray-400" :
+                        form.status === "Applied" ? "bg-green-400" :
+                          form.status === "Interviewing" ? "bg-yellow-400" :
+                            form.status === "Offered" ? "bg-orange-400" :
+                              form.status === "Rejected" ? "bg-red-400" :
+                                "bg-blue-400"
+                      }`} />
+                    {form.status}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showStatusSelect ? "rotate-180" : ""}`} />
+                </div>
+                <AnimatePresence>
+                  {showStatusSelect && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowStatusSelect(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden"
+                      >
+                        {["Saved", "Applied", "In Progress", "Interviewing", "Offered", "Rejected"].map((status) => (
+                          <div
+                            key={status}
+                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between
+                              ${form.status === status ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"}
+                            `}
+                            onClick={() => {
+                              setForm({ ...form, status });
+                              setShowStatusSelect(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full
+                                ${status === "Saved" ? "bg-gray-400" :
+                                  status === "Applied" ? "bg-green-400" :
+                                    status === "Interviewing" ? "bg-yellow-400" :
+                                      status === "Offered" ? "bg-orange-400" :
+                                        status === "Rejected" ? "bg-red-400" :
+                                          "bg-blue-400"
+                                }`} />
+                              {status}
+                            </div>
+                            {form.status === status && <Check className="w-4 h-4" />}
+                          </div>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
 
               <div className="flex flex-col">
                 <label className="text-sm text-gray-700 mb-1">
@@ -634,6 +793,7 @@ export default function JobsPage() {
                     notes: jobToEdit.notes ?? "",
                     tags: jobToEdit.tags.join(", "),
                     resources: jobToEdit.resources.join(", "),
+                    resumeUrl: jobToEdit.resumeUrl || "",
                   });
                   setEditJobId(jobToEdit.id);
                   setShowModal(true);
@@ -718,6 +878,18 @@ export default function JobsPage() {
                       <a href={job.link} target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-50 rounded-full text-blue-600 hover:bg-blue-100" onClick={(e) => e.stopPropagation()}>
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      {job.resumeUrl && (
+                        <button
+                          className="p-2 bg-gray-50 rounded-full text-purple-600 hover:bg-purple-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewResume(job.resumeUrl!);
+                          }}
+                          title="View Resume"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         className="p-2 bg-gray-50 rounded-full text-amber-600 hover:bg-amber-100"
                         onClick={(e) => {
@@ -734,6 +906,7 @@ export default function JobsPage() {
                             notes: job.notes ?? "",
                             tags: job.tags.join(", "),
                             resources: job.resources.join(", "),
+                            resumeUrl: job.resumeUrl || "",
                           });
                           setEditJobId(job.id);
                           setShowModal(true);
@@ -898,6 +1071,15 @@ export default function JobsPage() {
                             <a href={job.link} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors">
                               <ExternalLink className="w-4 h-4" />
                             </a>
+                            {job.resumeUrl && (
+                              <button
+                                onClick={() => handleViewResume(job.resumeUrl!)}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                title="View Resume"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               className="text-gray-400 hover:text-purple-600 transition-colors relative"
                               onClick={() => {

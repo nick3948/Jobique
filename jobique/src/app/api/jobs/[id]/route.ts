@@ -26,6 +26,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         notes: body.notes,
         tags: body.tags,
         resources: body.resources,
+        resumeUrl: body.resumeUrl,
+        // If resumeUrl is being set/updated, update the timestamp
+        ...(body.resumeUrl ? { resumeUpdatedAt: new Date() } : {}),
       },
     });
 

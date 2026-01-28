@@ -43,6 +43,8 @@ model JobApplication {
   notes      String?
   tags         String[]
   resources    String[]
+  resumeUrl    String?
+  resumeUpdatedAt DateTime?
   shared      Boolean  @default(false)
   created_at DateTime     @default(now())
 
@@ -122,4 +124,13 @@ model GoalProgress {
   date               DateTime
   applications_made  Int
   followups_done     Int
+}
+
+model UserUsage {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  uploadDate DateTime @default(now()) // Tracks the current day (reset daily)
+  uploadCount Int      @default(0)     // Count of uploads for the day
+  
+  updatedAt DateTime @updatedAt
 }

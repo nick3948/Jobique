@@ -45,6 +45,11 @@
     ```bash
     npm install
     ```
+    
+    *(Optional) If you plan to use Python scripts:*
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 3.  **Set up Environment Variables**:
     Create a `.env` file in the root directory and add the following:
@@ -63,6 +68,13 @@
     # Email Service
     EMAIL_USER="your-email@gmail.com"
     EMAIL_PASS="your-app-password"
+
+    # Job File Storage (AWS S3)
+    AWS_ACCESS_KEY_ID=...
+    AWS_SECRET_ACCESS_KEY=...
+    AWS_REGION=us-east-1
+    AWS_BUCKET_NAME=jobique-uploads
+
 
     # Cron Security
     CRON_SECRET="your-random-secret-string"

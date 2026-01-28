@@ -45,6 +45,8 @@ export async function POST(req: Request) {
         notes: body.notes || "",
         tags: body.tags || [],
         resources: body.resources || [],
+        resumeUrl: body.resumeUrl || null,
+        resumeUpdatedAt: body.resumeUrl ? new Date() : null,
         shared: body.shared ?? false,
       },
     });

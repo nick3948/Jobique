@@ -25,7 +25,6 @@ export default function DashboardLayout({
       <Navbar />
 
       <div className="flex flex-1 relative">
-        {/* Mobile Warning Overlay */}
         <div className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center p-8 text-center">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg>
