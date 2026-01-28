@@ -106,9 +106,8 @@ export async function POST(req: NextRequest) {
     from: `"Jobique" <${process.env.EMAIL_USER}>`,
     to: matchedUser?.emailAddresses[0]?.emailAddress,
     subject: "Job Applications Shared with You",
-    html: `Hi ${matchedUser?.firstName || ""},<br><br>${
-      users.find((u) => u.id === userId)?.firstName || "Someone"
-    } ${users.find((u) => u.id === userId)?.lastName || ""} has shared the following job applications with you via Jobique:<br><pre>${jobTitles}</pre><br>You can now view them in your <a href="https://jobique.vercel.app/dashboard">Jobique dashboard</a>.<br><br>- Team Jobique`,
+    html: `Hi ${matchedUser?.firstName || ""},<br><br>${users.find((u) => u.id === userId)?.firstName || "Someone"
+      } ${users.find((u) => u.id === userId)?.lastName || ""} has shared the following job applications with you via Jobique:<br><pre>${jobTitles}</pre><br>You can now view them in your <a href="https://jobique.vercel.app/dashboard">Jobique dashboard</a>.<br><br>- Team Jobique`,
   };
 
   try {

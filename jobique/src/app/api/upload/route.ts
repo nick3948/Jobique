@@ -75,6 +75,6 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         console.error("S3 Presigned URL Error:", error);
-        return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
+        return NextResponse.json({ error: `Failed to create upload URL: ${(error as Error).message}` }, { status: 500 });
     }
 }
