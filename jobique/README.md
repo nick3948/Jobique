@@ -9,8 +9,9 @@
 ## ✨ Key Features
 
 - **📊 Smart Dashboard**: visual tracking of all your applications (Applied, Interviewing, Offered, etc.).
+- **📂 Resume Management**: Upload (PDF), view, and **delete** resumes for specific jobs, backed by **AWS S3**.
 - **🤖 AI Auto-Fill**: Paste a job URL, and Jobique extracts the Role, Company, Location, and Description automatically.
-- **✍️ AI Message Generator**: Draft personalized referral requests and cold messages in seconds.
+- **✍️ Instant AI Drafting**: Generate personalized networking messages in seconds (cached for speed ⚡).
 - **📨 Automated Reminders**: Get email notifications for saved jobs you haven't applied to yet.
 - **🤝 Job Sharing**: Share job opportunities with friends directly from the app.
 

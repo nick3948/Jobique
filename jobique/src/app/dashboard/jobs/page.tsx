@@ -155,18 +155,7 @@ export default function JobsPage() {
   } | null>(null);
   const [messageCache, setMessageCache] = useState<Record<string, string>>({});
 
-  const generateAcronym = (title: string) => {
-    if (!title) return "";
-    // Clean title: remove separators like -, |, – and text after them
-    const cleanTitle = title.split(/[-|–]/)[0].trim();
-    // Generate acronym from first letters of words
-    const acronym = cleanTitle
-      .split(/\s+/)
-      .filter((word) => word.length > 0)
-      .map((word) => word[0].toUpperCase())
-      .join("");
-    return `#${acronym}`;
-  };
+
 
   const handleAutoFill = async () => {
     if (!form.link) return;
@@ -186,8 +175,8 @@ export default function JobsPage() {
             title: newTitle,
             company: data.company || prev.company,
             location: data.location || prev.location,
-            notes: prev.notes, // Keep existing notes, do not fill with generic description
-            tags: generateAcronym(newTitle),
+            notes: prev.notes,
+            tags: data.tags && Array.isArray(data.tags) ? data.tags.join(", ") : prev.tags,
           };
         });
       } else {

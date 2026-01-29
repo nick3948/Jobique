@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: Request) {
     try {
@@ -9,7 +14,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "URL is required" }, { status: 400 });
         }
 
-        // Basic validation to ensure it's a valid URL
         try {
             new URL(url);
         } catch {
@@ -50,14 +54,12 @@ export async function POST(req: Request) {
         let location = "";
         let description = "";
 
-        // 1. Try JSON-LD (Schema.org JobPosting) - Most reliable
         const jsonLdScripts = $('script[type="application/ld+json"]');
         jsonLdScripts.each((_, el) => {
             try {
                 const text = $(el).html();
                 if (text) {
                     const json = JSON.parse(text);
-                    // Handle array of schemas or single object
                     const schemas = Array.isArray(json) ? json : [json];
                     const jobSchema = schemas.find(
                         (s) => s["@type"] === "JobPosting" || s["@type"] === "http://schema.org/JobPosting"
@@ -91,15 +93,53 @@ export async function POST(req: Request) {
         if (!description) {
             description = $('meta[property="og:description"]').attr("content") ||
                 $('meta[name="description"]').attr("content") ||
+                $('body').text().substring(0, 2000) || // Fallback to body text truncation
                 "";
         }
 
-        return NextResponse.json({
-            title,
-            company,
-            location,
-            description,
+        // 3. AI Processing to clean and tag
+        const prompt = `
+        Analyze the following raw job data extracted from a webpage:
+        
+        URL: ${url}
+        Title (Raw): ${title}
+        Company (Raw): ${company}
+        Location (Raw): ${location}
+        Description snippet: ${description.substring(0, 1000)}...
+
+        1. Clean up the Title, Company, and Location (remove clutter like " | Careers", "Inc.", etc.).
+        2. Generate 3-5 short, relevant tags (e.g. "Remote", "Python", "Internship", "H1B Sponsor", "React").
+           - Prioritize: Tech Stack, Job Type (Intern/Full Time), Location Type (Remote/Hybrid).
+        
+        Return ONLY valid JSON in this format:
+        {
+          "title": "Cleaned Title",
+          "company": "Cleaned Company",
+          "location": "Cleaned Location",
+          "tags": ["Tag1", "Tag2", "Tag3"]
+        }
+        `;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini", // Cost effective model
+            messages: [
+                { role: "system", content: "You are a helpful job data extractor." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
         });
+
+        const content = completion.choices[0].message.content;
+        const aiData = JSON.parse(content || "{}");
+
+        return NextResponse.json({
+            title: aiData.title || title,
+            company: aiData.company || company,
+            location: aiData.location || location,
+            description: description,
+            tags: aiData.tags || [],
+        });
+
     } catch (error: any) {
         console.error("Extraction error:", error);
         return NextResponse.json({ error: "Failed to extract details" }, { status: 500 });
