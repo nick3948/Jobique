@@ -153,6 +153,7 @@ export default function JobsPage() {
     jobTitle: string;
     company: string;
   } | null>(null);
+  const [messageCache, setMessageCache] = useState<Record<string, string>>({});
 
   const generateAcronym = (title: string) => {
     if (!title) return "";
@@ -203,12 +204,21 @@ export default function JobsPage() {
     const job = jobs.find((j) => j.id === jobIdInFocus);
     if (!job) return;
 
+    const cacheKey = `${job.id}-${contact.id || contact.name}`;
+
     setMessageParams({
       contactName: contact.name,
       jobTitle: job.title,
       company: job.company,
     });
     setShowMessageModal(true);
+
+    if (messageCache[cacheKey]) {
+      setGeneratedMessage(messageCache[cacheKey]);
+      setIsGeneratingMessage(false);
+      return;
+    }
+
     setGeneratedMessage("");
     setIsGeneratingMessage(true);
 
@@ -228,6 +238,7 @@ export default function JobsPage() {
       const data = await res.json();
       if (res.ok) {
         setGeneratedMessage(data.message);
+        setMessageCache((prev) => ({ ...prev, [cacheKey]: data.message }));
       } else {
         setGeneratedMessage("Error: " + data.error);
       }
@@ -602,11 +613,14 @@ export default function JobsPage() {
                   {form.resumeUrl && (
                     <button
                       type="button"
-                      onClick={() => handleViewResume(form.resumeUrl!)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                      title="View Resume"
+                      onClick={() => {
+                        setForm({ ...form, resumeUrl: "" });
+                        toast.success("Resume removed successfully!");
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete Resume"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
