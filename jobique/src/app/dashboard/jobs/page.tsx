@@ -104,6 +104,8 @@ export default function JobsPage() {
 
   const sortedGroupedJobs = Object.keys(groupedJobs)
     .sort((a, b) => {
+      if (a === "Not Yet Applied!") return -1;
+      if (b === "Not Yet Applied!") return 1;
       const parseDate = (key: string) => {
         if (key === "Today") return new Date();
         if (key === "Yesterday") return new Date(Date.now() - 86400000);
@@ -791,7 +793,7 @@ export default function JobsPage() {
                     link: jobToEdit.link,
                     status: jobToEdit.status,
                     applied_date: jobToEdit.applied_date
-                      ? new Date(jobToEdit.applied_date).toISOString().split("T")[0]
+                      ? format(new Date(jobToEdit.applied_date), "yyyy-MM-dd")
                       : "",
                     notes: jobToEdit.notes ?? "",
                     tags: jobToEdit.tags.join(", "),
